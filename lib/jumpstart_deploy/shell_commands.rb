@@ -30,16 +30,15 @@ module JumpstartDeploy
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
-
-      cmd_array = [ command, subcommand, *args ].compact
-      safe_cmd = cmd_array.map { |arg| Shellwords.escape(arg.to_s) }
+      
+      cmd_array = [command, subcommand, *args].compact.map(&:to_s)
 
       Dir.chdir(dir || Dir.pwd) do
-        stdout, stderr, status = Open3.capture3(safe_cmd.join(" "))
+        out, err, status = Open3.capture3(*cmd_array)
         unless status.success?
-          raise CommandError, "Command failed: #{stderr}"
+          raise CommandError, "Command failed: #{err}"
         end
-        stdout
+        out
       end
     end
 
@@ -62,6 +61,16 @@ module JumpstartDeploy
       when Range
         unless allowed_args.include?(args.length)
           raise InvalidCommandError, "Invalid number of arguments for #{command} #{subcommand}"
+        end
+      end
+
+      validate_arguments!(args)
+    end
+
+    def self.validate_arguments!(args)
+      args.each do |arg|
+        if arg.to_s.match?(/[;&|]/)
+          raise InvalidCommandError, "Invalid characters in argument"
         end
       end
     end
