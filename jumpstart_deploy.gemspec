@@ -5,8 +5,8 @@ require_relative "lib/jumpstart_deploy/version"
 Gem::Specification.new do |spec|
   spec.name = "jumpstart_deploy"
   spec.version = JumpstartDeploy::VERSION
-  spec.authors = ["Your Name"]
-  spec.email = ["your@email.com"]
+  spec.authors = [ "Your Name" ]
+  spec.email = [ "your@email.com" ]
 
   spec.summary = "CLI tool for deploying Jumpstart Pro apps to Hatchbox"
   spec.description = "Streamlines the process of creating and deploying new Jumpstart Pro applications to Hatchbox"
@@ -19,8 +19,8 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir["{lib,exe}/**/*", "README.md", "LICENSE.txt"]
   spec.bindir = "exe"
-  spec.executables = ["jumpstart-deploy"]
-  
+  spec.executables = [ "jumpstart-deploy" ]
+
   spec.add_dependency "thor", "~> 1.2"
   spec.add_dependency "octokit", "~> 6.0"
   spec.add_dependency "tty-prompt", "~> 0.23"

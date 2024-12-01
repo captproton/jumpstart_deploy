@@ -37,9 +37,9 @@ module JumpstartDeploy
     private
 
     def configure_deployment(options)
-      @app_name = options["name"] || 
+      @app_name = options["name"] ||
                   @prompt.ask("What's the name of your app?", required: true)
-      @team_name = options["team"] || 
+      @team_name = options["team"] ||
                    @prompt.ask("GitHub team name (optional):")
     end
 
