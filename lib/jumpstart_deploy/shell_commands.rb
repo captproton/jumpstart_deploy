@@ -1,4 +1,3 @@
-# lib/jumpstart_deploy/shell_commands.rb
 # frozen_string_literal: true
 
 require "open3"
@@ -9,7 +8,7 @@ module JumpstartDeploy
     class CommandError < StandardError; end
     class InvalidCommandError < CommandError; end
 
-    ALLOWED_COMMANDS = ["git", "bundle", "bin/rails"].freeze
+    ALLOWED_COMMANDS = [ "git", "bundle", "bin/rails" ].freeze
 
     def self.execute(*cmd, dir: nil)
       cmd = Array(cmd).flatten.compact
@@ -36,7 +35,7 @@ module JumpstartDeploy
     def self.git(*args, dir: nil)
       args = args.map(&:to_s)
       # Only allow specific git commands
-      allowed_git_commands = %w[clone remote add remove commit push]
+      allowed_git_commands = [ "clone", "remote", "add", "remove", "commit", "push" ]
       command = args.first
       unless allowed_git_commands.include?(command)
         raise InvalidCommandError, "Git command not allowed: #{command}"
@@ -48,7 +47,7 @@ module JumpstartDeploy
     def self.rails(*args, dir: nil)
       args = args.map(&:to_s)
       # Only allow specific rails commands
-      allowed_rails_commands = %w[db:create db:migrate assets:precompile]
+      allowed_rails_commands = [ "db:create", "db:migrate", "assets:precompile" ]
       command = args.first
       unless allowed_rails_commands.include?(command)
         raise InvalidCommandError, "Rails command not allowed: #{command}"
@@ -60,7 +59,7 @@ module JumpstartDeploy
     def self.bundle(*args, dir: nil)
       args = args.map(&:to_s)
       # Only allow specific bundle commands
-      allowed_bundle_commands = %w[install exec]
+      allowed_bundle_commands = [ "install", "exec" ]
       command = args.first
       unless allowed_bundle_commands.include?(command)
         raise InvalidCommandError, "Bundle command not allowed: #{command}"
