@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JumpstartDeploy
   class AlertComponent < ViewComponent::Base
     def initialize(message:, type: :success)

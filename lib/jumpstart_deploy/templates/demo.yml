@@ -1,0 +1,27 @@
+---
+environment: demo
+ruby_version: 3.2.2
+node_version: 18.x
+
+environment_variables:
+  RAILS_ENV: production
+  RAILS_LOG_TO_STDOUT: "true"
+  RAILS_SERVE_STATIC_FILES: "true"
+  RAILS_MAX_THREADS: "2"
+  WEB_CONCURRENCY: "1"
+  DEMO_MODE: "true"
+
+database:
+  adapter: postgresql
+  encoding: unicode
+  pool: 2
+
+sidekiq:
+  enabled: false
+
+redis:
+  enabled: false
+
+assets:
+  compile: true
+  compression: false

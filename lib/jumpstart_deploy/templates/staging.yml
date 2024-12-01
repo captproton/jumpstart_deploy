@@ -1,0 +1,31 @@
+---
+environment: staging
+ruby_version: 3.2.2
+node_version: 18.x
+
+environment_variables:
+  RAILS_ENV: staging
+  RAILS_LOG_TO_STDOUT: "true"
+  RAILS_SERVE_STATIC_FILES: "true"
+  RAILS_MAX_THREADS: "3"
+  WEB_CONCURRENCY: "1"
+
+database:
+  adapter: postgresql
+  encoding: unicode
+  pool: 3
+
+sidekiq:
+  enabled: true
+  concurrency: 5
+  queues:
+    - default
+    - mailers
+    - active_storage
+
+redis:
+  enabled: true
+
+assets:
+  compile: true
+  compression: false
