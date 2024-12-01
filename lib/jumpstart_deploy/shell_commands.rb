@@ -30,8 +30,8 @@ module JumpstartDeploy
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
-      
-      cmd_array = [command, subcommand, *args].compact
+
+      cmd_array = [ command, subcommand, *args ].compact
       safe_cmd = cmd_array.map { |arg| Shellwords.escape(arg.to_s) }
 
       Dir.chdir(dir || Dir.pwd) do
