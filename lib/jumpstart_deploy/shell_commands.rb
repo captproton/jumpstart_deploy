@@ -30,8 +30,8 @@ module JumpstartDeploy
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
-      
-      cmd_array = [command, subcommand, *args].compact.map(&:to_s)
+
+      cmd_array = [ command, subcommand, *args ].compact.map(&:to_s)
 
       Dir.chdir(dir || Dir.pwd) do
         out, err, status = Open3.capture3(*cmd_array)
