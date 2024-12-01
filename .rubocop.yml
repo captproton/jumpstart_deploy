@@ -6,31 +6,73 @@ AllCops:
 Style/Documentation:
   Enabled: false
 
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
 Style/StringLiterals:
+  Enabled: true
   EnforcedStyle: double_quotes
+  ConsistentQuotesInMultiline: true
 
 Style/SymbolArray:
   EnforcedStyle: brackets
 
 Style/WordArray:
   EnforcedStyle: brackets
+  MinSize: 3
 
 Style/HashSyntax:
   EnforcedStyle: ruby19_no_mixed_keys
 
+Style/ExpandPathArguments:
+  Enabled: true
+
+Style/GlobalStdStream:
+  Enabled: false
+
+Style/ArgumentsForwarding:
+  Enabled: true
+
 Layout/LineLength:
   Max: 120
 
+Layout/SpaceInsideArrayLiteralBrackets:
+  EnforcedStyle: no_space
+
+Layout/SpaceInsidePercentLiteralDelimiters:
+  Enabled: true
+
+Layout/EmptyLines:
+  Enabled: true
+
+Layout/EmptyLinesAroundBlockBody:
+  Enabled: true
+
+Layout/TrailingEmptyLines:
+  EnforcedStyle: final_newline
+
+Layout/TrailingWhitespace:
+  Enabled: true
+
 Metrics/MethodLength:
-  Max: 20
+  Max: 25
+
+Metrics/BlockLength:
+  Max: 30
+  Exclude:
+    - "*.gemspec"
+    - "spec/**/*"
+    - "test/**/*"
 
 Metrics/AbcSize:
   Max: 30
 
-Metrics/BlockLength:
-  Exclude:
-    - "*.gemspec"
-    - "spec/**/*"
+Lint/MissingSuper:
+  Enabled: true
 
 Gemspec/RequireMFA:
   Enabled: false
+
+Gemspec/RequiredRubyVersion:
+  Enabled: true
