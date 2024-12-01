@@ -59,51 +59,17 @@ module JumpstartDeploy
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
-
-      # Build command array without splat
-      cmd_array = [command, subcommand].concat(args.map(&:to_s))
-
+      
       Dir.chdir(dir || Dir.pwd) do
-        read_pipe, write_pipe = IO.pipe
-        
-        pid = fork do
-          read_pipe.close
-          $stdout.reopen(write_pipe)
-          $stderr.reopen(write_pipe)
-          write_pipe.close
-
-          # Clean environment
-          ENV.clear
-          ENV['PATH'] = '/usr/bin:/bin'
-          
-          # Execute command with explicit arguments - no splat operator
-          case cmd_array.length
-          when 1
-            exec(cmd_array[0], { unsetenv_others: true })
-          when 2
-            exec(cmd_array[0], cmd_array[1], { unsetenv_others: true })
-          when 3
-            exec(cmd_array[0], cmd_array[1], cmd_array[2], { unsetenv_others: true })
-          when 4
-            exec(cmd_array[0], cmd_array[1], cmd_array[2], cmd_array[3], { unsetenv_others: true })
-          else
-            exec(cmd_array[0], cmd_array[1], cmd_array[2], cmd_array[3], *cmd_array[4..], { unsetenv_others: true })
-          end
-        end
-
-        write_pipe.close
-        output = read_pipe.read
-        read_pipe.close
-
-        _, status = Process.waitpid2(pid)
-        
+        # Following the documentation pattern exactly:
+        # system("command", "arg1", "arg2")
+        stdout, stderr, status = Open3.capture3(command, subcommand, *args)
         unless status.success?
           # Log error internally but don't expose in message
-          Rails.logger.error("Command error: #{output}") if defined?(Rails)
+          Rails.logger.error("Command error: #{stderr}") if defined?(Rails)
           raise CommandError, "Command '#{command} #{subcommand}' failed."
         end
-
-        output
+        stdout
       end
     end
 
