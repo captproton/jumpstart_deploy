@@ -64,9 +64,6 @@ module JumpstartDeploy
       cmd_array = [command, subcommand].concat(args.map(&:to_s))
 
       Dir.chdir(dir || Dir.pwd) do
-        env = { 'PATH' => '/usr/bin:/bin' }
-        
-        # Pass command and arguments directly to avoid shell interpretation
         read_pipe, write_pipe = IO.pipe
         
         pid = fork do
@@ -75,16 +72,23 @@ module JumpstartDeploy
           $stderr.reopen(write_pipe)
           write_pipe.close
 
-          # Clean environment and execute command
+          # Clean environment
           ENV.clear
           ENV['PATH'] = '/usr/bin:/bin'
           
-          # Execute with explicit command and arguments
-          exec(
-            cmd_array[0],
-            *cmd_array[1..],
-            unsetenv_others: true
-          )
+          # Execute command with explicit arguments - no splat operator
+          case cmd_array.length
+          when 1
+            exec(cmd_array[0], { unsetenv_others: true })
+          when 2
+            exec(cmd_array[0], cmd_array[1], { unsetenv_others: true })
+          when 3
+            exec(cmd_array[0], cmd_array[1], cmd_array[2], { unsetenv_others: true })
+          when 4
+            exec(cmd_array[0], cmd_array[1], cmd_array[2], cmd_array[3], { unsetenv_others: true })
+          else
+            exec(cmd_array[0], cmd_array[1], cmd_array[2], cmd_array[3], *cmd_array[4..], { unsetenv_others: true })
+          end
         end
 
         write_pipe.close
