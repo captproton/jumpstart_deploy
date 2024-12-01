@@ -1,61 +1,73 @@
 # frozen_string_literal: true
 
+require 'open3'
+
 module JumpstartDeploy
   module ShellCommands
     class CommandError < StandardError; end
     class InvalidCommandError < CommandError; end
 
-    # Define allowed commands with their allowed arguments
-    COMMAND_WHITELIST = {
-      "git" => {
-        "clone" => {
+    # Define command configurations with their exact argument patterns
+    COMMAND_CONFIG = {
+      'git' => {
+        'clone' => {
           args: [:url, :path],
-          validator: ->(args) { args.length == 2 }
+          validator: ->(args) { valid_git_url?(args[0]) && valid_path?(args[1]) }
         },
-        "remote" => {
+        'remote' => {
           args: [:action, :name, :url],
-          validator: ->(args) { ["add", "remove"].include?(args[0]) && args.length.between?(2, 3) }
+          validator: ->(args) { %w[add remove].include?(args[0]) && args.length.between?(2, 3) }
         },
-        "add" => {
+        'add' => {
           args: [:path],
           validator: ->(args) { args.length == 1 }
         },
-        "commit" => {
-          args: ["-m", :message],
-          validator: ->(args) { args.length == 2 && args[0] == "-m" }
+        'commit' => {
+          args: ['-m', :message],
+          validator: ->(args) { args.length == 2 && args[0] == '-m' && safe_message?(args[1]) }
         },
-        "push" => {
+        'push' => {
           args: [:remote, :branch],
           validator: ->(args) { args.length == 2 }
         }
       },
-      "bundle" => {
-        "install" => {
+      'bundle' => {
+        'install' => {
           args: [],
           validator: ->(args) { args.empty? }
         },
-        "exec" => {
+        'exec' => {
           args: [:command],
           validator: ->(args) { !args.empty? }
         }
       },
-      "bin/rails" => {
-        "db:create" => 0,
-        "db:migrate" => 0,
-        "assets:precompile" => 0
+      'bin/rails' => {
+        'db:create' => {
+          args: [],
+          validator: ->(args) { args.empty? }
+        },
+        'db:migrate' => {
+          args: [],
+          validator: ->(args) { args.empty? }
+        },
+        'assets:precompile' => {
+          args: [],
+          validator: ->(args) { args.empty? }
+        }
       }
     }.freeze
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
 
-      # Build the command array safely
       cmd_array = [command, subcommand, *args].map(&:to_s)
 
       Dir.chdir(dir || Dir.pwd) do
-        stdout, stderr, status = Open3.capture3(*cmd_array)
+        env = { 'PATH' => '/usr/bin:/bin' } # Limit PATH if necessary
+        stdout, stderr, status = Open3.capture3(env, *cmd_array)
         unless status.success?
-          raise CommandError, "Command failed: #{stderr.strip}"
+          raise CommandError, "Command '#{command} #{subcommand}' failed."
+          # Optionally log the stderr for debugging purposes, but do not expose it to the user.
         end
         stdout
       end
@@ -81,22 +93,41 @@ module JumpstartDeploy
 
     def self.validate_arguments!(args)
       args.each do |arg|
-        if arg.to_s.match?(/[;&|]/)
+        normalized_arg = arg.to_s.unicode_normalize(:nfkc)
+        unless normalized_arg.match?(/\A[\w\.\-\/]+\z/)
           raise InvalidCommandError, "Invalid characters in argument: #{arg}"
         end
       end
     end
 
+    def self.safe_message?(message)
+      # Define allowed patterns or escape the message safely
+      # For example, reject messages containing control characters
+      !message.to_s.match?(/[\x00-\x1F\x7F]/)
+    end
+
+    def self.valid_git_url?(url)
+      uri = URI.parse(url)
+      %w[http https ssh git].include?(uri.scheme)
+    rescue URI::InvalidURIError
+      false
+    end
+
+    def self.valid_path?(path)
+      # Ensure the path is a relative path and does not traverse directories
+      !path.include?('..') && path.match?(/\A[\w\.\-\/]+\z/)
+    end
+
     def self.git(subcommand, *args, dir: nil)
-      execute("git", subcommand, *args, dir: dir)
+      execute('git', subcommand, *args, dir: dir)
     end
 
     def self.rails(subcommand, *args, dir: nil)
-      execute("bin/rails", subcommand, *args, dir: dir)
+      execute('bin/rails', subcommand, *args, dir: dir)
     end
 
     def self.bundle(subcommand, *args, dir: nil)
-      execute("bundle", subcommand, *args, dir: dir)
+      execute('bundle', subcommand, *args, dir: dir)
     end
   end
 end
