@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.executables = [ "jumpstart-deploy" ]
 
   spec.add_dependency "thor", "~> 1.2"
-  spec.add_dependency "octokit", "~> 6.0"
+  spec.add_dependency "octokit", "~> 9.0"
   spec.add_dependency "tty-prompt", "~> 0.23"
   spec.add_dependency "tty-spinner", "~> 0.9"
   spec.add_dependency "http", "~> 5.1"
