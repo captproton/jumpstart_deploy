@@ -7,11 +7,13 @@ Gem::Specification.new do |spec|
   spec.email       = [ "carl@wdwhub.net" ]
   spec.homepage    = "https://github.com/captproton/jumpstart_deploy"
   spec.summary     = "A streamlined, repeatable process for deploying fresh Jumpstart Pro Rails apps to Hatchbox throughout your day."
+  # rubocop:disable Layout/IndentationWidth, Layout/LineLength
   spec.description = "This tool will: Prompt for app name and any additional options
 Create a GitHub repo
 Set up Jumpstart Pro
 Configure Hatchbox
 Show you the URLs when done"
+  # rubocop:enable Layout/IndentationWidth, Layout/LineLength
   spec.license     = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the "allowed_push_host"
