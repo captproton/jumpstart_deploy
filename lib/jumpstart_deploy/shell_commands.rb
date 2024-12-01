@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require "open3"
-
 module JumpstartDeploy
   module ShellCommands
     class CommandError < StandardError; end
@@ -11,23 +9,23 @@ module JumpstartDeploy
     COMMAND_CONFIG = {
       "git" => {
         "clone" => {
-          args: [ :url, :path ],
+          args: [:url, :path],
           validator: ->(args) { args.length == 2 }
         },
         "remote" => {
-          args: [ :action, :name, :url ],
-          validator: ->(args) { [ "add", "remove" ].include?(args[0]) && args.length.between?(2, 3) }
+          args: [:action, :name, :url],
+          validator: ->(args) { ["add", "remove"].include?(args[0]) && args.length.between?(2, 3) }
         },
         "add" => {
-          args: [ :path ],
+          args: [:path],
           validator: ->(args) { args.length == 1 }
         },
         "commit" => {
-          args: [ "-m", :message ],
+          args: ["-m", :message],
           validator: ->(args) { args.length == 2 && args[0] == "-m" }
         },
         "push" => {
-          args: [ :remote, :branch ],
+          args: [:remote, :branch],
           validator: ->(args) { args.length == 2 }
         }
       },
@@ -37,7 +35,7 @@ module JumpstartDeploy
           validator: ->(args) { args.empty? }
         },
         "exec" => {
-          args: [ :command ],
+          args: [:command],
           validator: ->(args) { !args.empty? }
         }
       },
@@ -83,7 +81,7 @@ module JumpstartDeploy
     end
 
     def self.build_command_array(command, subcommand, args, config)
-      [ command, subcommand, *process_arguments(args) ].compact
+      [command, subcommand, *process_arguments(args)].compact
     end
 
     def self.process_arguments(args)
@@ -96,12 +94,35 @@ module JumpstartDeploy
     end
 
     def self.run_command(cmd_array, dir = nil)
-      Dir.chdir(dir || Dir.pwd) do
-        out, err, status = Open3.capture3(*cmd_array)
+      working_dir = dir || Dir.pwd
+      out_r, out_w = IO.pipe
+      err_r, err_w = IO.pipe
+      
+      Dir.chdir(working_dir) do
+        pid = Process.spawn(
+          cmd_array[0],           # command
+          *cmd_array[1..],        # arguments
+          {
+            out: out_w,           # redirect stdout
+            err: err_w,           # redirect stderr
+            unsetenv_others: true # clean environment
+          }
+        )
+        
+        out_w.close
+        err_w.close
+        
+        _, status = Process.waitpid2(pid)
+        output = out_r.read
+        error = err_r.read
+        
         unless status.success?
-          raise CommandError, "Command failed: #{err}"
+          raise CommandError, "Command failed: #{error}"
         end
-        out
+        
+        output
+      ensure
+        [out_r, err_r].each(&:close)
       end
     end
 
