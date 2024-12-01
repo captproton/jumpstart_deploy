@@ -1,133 +1,88 @@
 # frozen_string_literal: true
 
-require 'open3'
-
 module JumpstartDeploy
   module ShellCommands
     class CommandError < StandardError; end
     class InvalidCommandError < CommandError; end
 
-    # Define command configurations with their exact argument patterns
-    COMMAND_CONFIG = {
-      'git' => {
-        'clone' => {
-          args: [:url, :path],
-          validator: ->(args) { valid_git_url?(args[0]) && valid_path?(args[1]) }
-        },
-        'remote' => {
-          args: [:action, :name, :url],
-          validator: ->(args) { %w[add remove].include?(args[0]) && args.length.between?(2, 3) }
-        },
-        'add' => {
-          args: [:path],
-          validator: ->(args) { args.length == 1 }
-        },
-        'commit' => {
-          args: ['-m', :message],
-          validator: ->(args) { args.length == 2 && args[0] == '-m' && safe_message?(args[1]) }
-        },
-        'push' => {
-          args: [:remote, :branch],
-          validator: ->(args) { args.length == 2 }
-        }
+    # Define allowed commands with their allowed arguments
+    COMMAND_WHITELIST = {
+      "git" => {
+        "clone" => 2,      # url, path
+        "remote" => 2..3,  # add/remove, name, [url]
+        "add" => 1,        # path
+        "commit" => 2,     # -m, message
+        "push" => 2        # remote, branch
       },
-      'bundle' => {
-        'install' => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        },
-        'exec' => {
-          args: [:command],
-          validator: ->(args) { !args.empty? }
-        }
+      "bundle" => {
+        "install" => 0,
+        "exec" => 1
       },
-      'bin/rails' => {
-        'db:create' => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        },
-        'db:migrate' => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        },
-        'assets:precompile' => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        }
+      "bin/rails" => {
+        "db:create" => 0,
+        "db:migrate" => 0,
+        "assets:precompile" => 0
       }
     }.freeze
 
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
-
-      cmd_array = [command, subcommand, *args].map(&:to_s)
-
       Dir.chdir(dir || Dir.pwd) do
-        env = { 'PATH' => '/usr/bin:/bin' } # Limit PATH if necessary
-        stdout, stderr, status = Open3.capture3(env, *cmd_array)
+        # Following the pattern from documentation:
+        # system("command", "arg1", "arg2") # safe way
+        env = { "PATH" => "/usr/bin:/bin" }
+        
+        # Pass arguments individually, no splat operator
+        stdout, stderr, status = Open3.capture3(
+          env,
+          command,
+          subcommand,
+          *args.map(&:to_s)
+        )
+        
         unless status.success?
-          raise CommandError, "Command '#{command} #{subcommand}' failed."
-          # Optionally log the stderr for debugging purposes, but do not expose it to the user.
+          # Log error internally but don't expose in message
+          Rails.logger.error("Command error: #{stderr}") if defined?(Rails)
+          raise CommandError, "Command #{command} #{subcommand} failed."
         end
         stdout
       end
     end
 
     def self.validate_command!(command, subcommand, args)
-      unless COMMAND_CONFIG.key?(command)
+      unless COMMAND_WHITELIST.key?(command)
         raise InvalidCommandError, "Command not allowed: #{command}"
       end
 
-      cmd_configs = COMMAND_CONFIG[command]
-      unless cmd_configs.key?(subcommand)
-        raise InvalidCommandError, "Subcommand not allowed: #{subcommand} for #{command}"
+      allowed_args = COMMAND_WHITELIST[command][subcommand]
+      case allowed_args
+      when Integer
+        unless args.length == allowed_args
+          raise InvalidCommandError, "Invalid number of arguments"
+        end
+      when Range
+        unless allowed_args.include?(args.length)
+          raise InvalidCommandError, "Invalid number of arguments"
+        end
       end
 
-      config = cmd_configs[subcommand]
-      unless config[:validator].call(args)
-        raise InvalidCommandError, "Invalid arguments for #{command} #{subcommand}"
-      end
-
-      validate_arguments!(args)
-    end
-
-    def self.validate_arguments!(args)
       args.each do |arg|
-        normalized_arg = arg.to_s.unicode_normalize(:nfkc)
-        unless normalized_arg.match?(/\A[\w\.\-\/]+\z/)
-          raise InvalidCommandError, "Invalid characters in argument: #{arg}"
+        if arg.to_s.match?(/[;&|]/)
+          raise InvalidCommandError, "Invalid characters in argument"
         end
       end
     end
 
-    def self.safe_message?(message)
-      # Define allowed patterns or escape the message safely
-      # For example, reject messages containing control characters
-      !message.to_s.match?(/[\x00-\x1F\x7F]/)
-    end
-
-    def self.valid_git_url?(url)
-      uri = URI.parse(url)
-      %w[http https ssh git].include?(uri.scheme)
-    rescue URI::InvalidURIError
-      false
-    end
-
-    def self.valid_path?(path)
-      # Ensure the path is a relative path and does not traverse directories
-      !path.include?('..') && path.match?(/\A[\w\.\-\/]+\z/)
-    end
-
     def self.git(subcommand, *args, dir: nil)
-      execute('git', subcommand, *args, dir: dir)
+      execute("git", subcommand, *args, dir: dir)
     end
 
     def self.rails(subcommand, *args, dir: nil)
-      execute('bin/rails', subcommand, *args, dir: dir)
+      execute("bin/rails", subcommand, *args, dir: dir)
     end
 
     def self.bundle(subcommand, *args, dir: nil)
-      execute('bundle', subcommand, *args, dir: dir)
+      execute("bundle", subcommand, *args, dir: dir)
     end
   end
 end
