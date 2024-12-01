@@ -28,8 +28,10 @@ module JumpstartDeploy
     def self.execute(command, subcommand, *args, dir: nil)
       validate_command!(command, subcommand, args)
       Dir.chdir(dir || Dir.pwd) do
-        out, err, status = Open3.capture3(command, subcommand, *args)
-        unless status.success?
+        # Convert args to an array and pass each argument individually
+        cmd_args = [command, subcommand].concat(args.map(&:to_s))
+        out, err, status = system(*cmd_args, out: :capture, err: :capture)
+        unless status
           raise CommandError, "Command failed: #{err}"
         end
         out
@@ -60,16 +62,16 @@ module JumpstartDeploy
       end
     end
 
-    def self.git(*args, dir: nil)
-      execute("git", *args, dir: dir)
+    def self.git(subcommand, *args, dir: nil)
+      execute("git", subcommand, *args, dir: dir)
     end
 
-    def self.rails(*args, dir: nil)
-      execute("bin/rails", *args, dir: dir)
+    def self.rails(subcommand, *args, dir: nil)
+      execute("bin/rails", subcommand, *args, dir: dir)
     end
 
-    def self.bundle(*args, dir: nil)
-      execute("bundle", *args, dir: dir)
+    def self.bundle(subcommand, *args, dir: nil)
+      execute("bundle", subcommand, *args, dir: dir)
     end
   end
 end
