@@ -5,9 +5,10 @@ require "octokit"
 require "tty-prompt"
 require "tty-spinner"
 require "http"
+require_relative "shell_commands"
+require_relative "git_commands"
 
 module JumpstartDeploy
-  # Command line interface for JumpstartDeploy
   class CLI < Thor
     desc "new", "Create and deploy a new Jumpstart Pro app"
     method_option :name, type: :string, desc: "Name of the application"
@@ -18,12 +19,13 @@ module JumpstartDeploy
     end
   end
 
-  # Handles the deployment process
   class Deployer
+    include GitCommands
+
     def initialize
       super()
       @prompt = TTY::Prompt.new
-      @github = Octokit::Client.new(access_token: ENV.fetch("GITHUB_TOKEN"))
+      @github = Octokit::Client.new(access_token: fetch_github_token)
       @spinner = TTY::Spinner.new(":spinner :title", format: :dots)
     end
 
@@ -41,6 +43,20 @@ module JumpstartDeploy
                   @prompt.ask("What's the name of your app?", required: true)
       @team_name = options["team"] ||
                    @prompt.ask("GitHub team name (optional):")
+      validate_inputs!
+    end
+
+    def validate_inputs!
+      raise ArgumentError, "Invalid app name" unless valid_app_name?(@app_name)
+      raise ArgumentError, "Invalid team name" if @team_name && !valid_team_name?(@team_name)
+    end
+
+    def valid_app_name?(name)
+      name.match?(/\A[a-z0-9][a-z0-9-]*[a-z0-9]\z/) && name.length.between?(3, 63)
+    end
+
+    def valid_team_name?(name)
+      name.match?(/\A[a-z0-9][a-z0-9-]*[a-z0-9]\z/)
     end
 
     def perform_deployment
@@ -51,37 +67,22 @@ module JumpstartDeploy
       display_results
     end
 
-    def handle_error(error)
-      @spinner.error("(#{error.message})")
-      puts "\nDeployment failed. Please check the error and try again."
-    end
-
     def create_github_repo
       spinner_run("Creating GitHub repository") do
-        create_repo
+        @repo = @github.create_repository(
+          @app_name,
+          private: true,
+          description: "Rails application using Jumpstart Pro"
+        )
         add_team_to_repo if @team_name
       end
     end
 
-    def create_repo
-      @repo = @github.create_repository(
-        @app_name,
-        private: true,
-        description: "Rails application using Jumpstart Pro"
-      )
-    end
-
     def clone_jumpstart
       spinner_run("Cloning Jumpstart Pro") do
-        system("git clone #{ENV.fetch("JUMPSTART_REPO_URL")} #{tmp_path}")
-        configure_git
-      end
-    end
-
-    def configure_git
-      Dir.chdir(tmp_path) do
-        system("git remote remove origin")
-        system("git remote add origin #{@repo.ssh_url}")
+        jumpstart_url = fetch_jumpstart_url
+        clone_repository(jumpstart_url, tmp_path)
+        configure_remote(@repo.ssh_url, dir: tmp_path)
       end
     end
 
@@ -89,17 +90,11 @@ module JumpstartDeploy
       spinner_run("Configuring application") do
         Dir.chdir(tmp_path) do
           update_app_name
-          setup_application
+          ShellCommands.bundle("install")
+          ShellCommands.rails("db:create", "db:migrate")
+          initial_commit(dir: tmp_path)
         end
       end
-    end
-
-    def setup_application
-      system("bundle install")
-      system("bin/rails db:create db:migrate")
-      system("git add .")
-      system('git commit -m "Initial Jumpstart Pro setup"')
-      system("git push -u origin main")
     end
 
     def setup_hatchbox
@@ -110,39 +105,56 @@ module JumpstartDeploy
     end
 
     def create_hatchbox_app
-      response = HTTP.auth(ENV.fetch("HATCHBOX_API_TOKEN"))
-        .post("https://app.hatchbox.io/api/v1/apps", json: {
-          app: {
-            name: @app_name,
-            repository: @repo.full_name,
-            framework: "rails"
+      token = fetch_hatchbox_token
+      response = HTTP.auth(token)
+        .post(
+          "https://app.hatchbox.io/api/v1/apps",
+          json: {
+            app: {
+              name: @app_name,
+              repository: @repo.full_name,
+              framework: "rails"
+            }
           }
-        })
+        )
 
+      validate_response!(response)
       @hatchbox_app = JSON.parse(response.body.to_s)
     end
 
     def configure_environment
-      HTTP.auth(ENV.fetch("HATCHBOX_API_TOKEN"))
+      token = fetch_hatchbox_token
+      response = HTTP.auth(token)
         .post(
           "https://app.hatchbox.io/api/v1/apps/#{@hatchbox_app["id"]}/env_vars",
           json: { env_vars: default_env_vars }
         )
+
+      validate_response!(response)
     end
 
-    def add_team_to_repo
-      @github.add_team_repository(
-        @team_name,
-        @repo.full_name,
-        permission: "push"
-      )
+    def validate_response!(response)
+      unless response.status.success?
+        raise "API request failed: #{response.body}"
+      end
     end
 
-    def update_app_name
-      application_rb = File.read("config/application.rb")
-      new_module_name = @app_name.gsub("-", "_").camelize
-      updated_content = application_rb.gsub(/module \w+$/, "module #{new_module_name}")
-      File.write("config/application.rb", updated_content)
+    def fetch_github_token
+      ENV.fetch("GITHUB_TOKEN") do
+        raise "GITHUB_TOKEN environment variable is not set"
+      end
+    end
+
+    def fetch_hatchbox_token
+      ENV.fetch("HATCHBOX_API_TOKEN") do
+        raise "HATCHBOX_API_TOKEN environment variable is not set"
+      end
+    end
+
+    def fetch_jumpstart_url
+      ENV.fetch("JUMPSTART_REPO_URL") do
+        raise "JUMPSTART_REPO_URL environment variable is not set"
+      end
     end
 
     def default_env_vars
@@ -151,6 +163,15 @@ module JumpstartDeploy
         "RAILS_LOG_TO_STDOUT" => "true",
         "RAILS_SERVE_STATIC_FILES" => "true"
       }
+    end
+
+    def update_app_name
+      content = File.read("config/application.rb")
+      new_content = content.sub(
+        /module \w+$/,
+        "module #{@app_name.gsub("-", "_").camelize}"
+      )
+      File.write("config/application.rb", new_content)
     end
 
     def tmp_path
@@ -165,6 +186,17 @@ module JumpstartDeploy
     rescue StandardError => e
       @spinner.error
       raise e
+    end
+
+    def handle_error(error)
+      @spinner.error("(#{error.message})")
+      puts "\nDeployment failed. Please check the error and try again."
+      cleanup
+      raise error
+    end
+
+    def cleanup
+      FileUtils.rm_rf(tmp_path) if Dir.exist?(tmp_path)
     end
 
     def display_results
