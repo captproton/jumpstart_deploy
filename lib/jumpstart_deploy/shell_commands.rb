@@ -5,6 +5,13 @@ module JumpstartDeploy
     class CommandError < StandardError; end
     class InvalidCommandError < CommandError; end
 
+    # Define allowed binaries and their full paths
+    ALLOWED_BINARIES = {
+      "git" => "/usr/bin/git",           # Standard git location
+      "bundle" => "/usr/local/bin/bundle", # Typical RVM/rbenv location
+      "bin/rails" => "bin/rails"          # Project-relative Rails binary
+    }.freeze
+
     # Define command configurations with their exact argument patterns
     COMMAND_CONFIG = {
       "git" => {
@@ -81,7 +88,16 @@ module JumpstartDeploy
     end
 
     def self.build_command_array(command, subcommand, args, config)
-      [command, subcommand, *process_arguments(args)].compact
+      validated_command = get_binary_path(command)
+      validated_args = process_arguments(args)
+      [validated_command, subcommand, *validated_args].compact
+    end
+
+    def self.get_binary_path(command)
+      unless ALLOWED_BINARIES.key?(command)
+        raise InvalidCommandError, "Binary not allowed: #{command}"
+      end
+      ALLOWED_BINARIES[command]
     end
 
     def self.process_arguments(args)
@@ -95,34 +111,34 @@ module JumpstartDeploy
 
     def self.run_command(cmd_array, dir = nil)
       working_dir = dir || Dir.pwd
-      out_r, out_w = IO.pipe
-      err_r, err_w = IO.pipe
-      
+      read_pipe, write_pipe = IO.pipe
+
       Dir.chdir(working_dir) do
-        pid = Process.spawn(
-          cmd_array[0],           # command
-          *cmd_array[1..],        # arguments
-          {
-            out: out_w,           # redirect stdout
-            err: err_w,           # redirect stderr
-            unsetenv_others: true # clean environment
-          }
-        )
-        
-        out_w.close
-        err_w.close
-        
+        pid = fork do
+          read_pipe.close
+          $stdout.reopen(write_pipe)
+          $stderr.reopen(write_pipe)
+          write_pipe.close
+
+          # Clean environment and set minimal PATH
+          ENV.clear
+          ENV["PATH"] = "/usr/local/bin:/usr/bin:/bin"
+          
+          # Execute with explicit binary path
+          exec(*cmd_array, unsetenv_others: true)
+        end
+
+        write_pipe.close
+        output = read_pipe.read
+        read_pipe.close
+
         _, status = Process.waitpid2(pid)
-        output = out_r.read
-        error = err_r.read
         
         unless status.success?
-          raise CommandError, "Command failed: #{error}"
+          raise CommandError, "Command failed: #{output}"
         end
-        
+
         output
-      ensure
-        [out_r, err_r].each(&:close)
       end
     end
 
