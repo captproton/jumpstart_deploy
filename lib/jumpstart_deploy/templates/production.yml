@@ -1,0 +1,31 @@
+---
+environment: production
+ruby_version: 3.2.2
+node_version: 18.x
+
+environment_variables:
+  RAILS_ENV: production
+  RAILS_LOG_TO_STDOUT: "true"
+  RAILS_SERVE_STATIC_FILES: "true"
+  RAILS_MAX_THREADS: "5"
+  WEB_CONCURRENCY: "2"
+
+database:
+  adapter: postgresql
+  encoding: unicode
+  pool: 5
+
+sidekiq:
+  enabled: true
+  concurrency: 10
+  queues:
+    - default
+    - mailers
+    - active_storage
+
+redis:
+  enabled: true
+
+assets:
+  compile: true
+  compression: true
