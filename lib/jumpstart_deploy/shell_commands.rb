@@ -11,23 +11,23 @@ module JumpstartDeploy
     COMMAND_CONFIG = {
       "git" => {
         "clone" => {
-          args: [:url, :path],
+          args: [ :url, :path ],
           validator: ->(args) { args.length == 2 }
         },
         "remote" => {
-          args: [:action, :name, :url],
-          validator: ->(args) { ["add", "remove"].include?(args[0]) && args.length.between?(2, 3) }
+          args: [ :action, :name, :url ],
+          validator: ->(args) { [ "add", "remove" ].include?(args[0]) && args.length.between?(2, 3) }
         },
         "add" => {
-          args: [:path],
+          args: [ :path ],
           validator: ->(args) { args.length == 1 }
         },
         "commit" => {
-          args: ["-m", :message],
+          args: [ "-m", :message ],
           validator: ->(args) { args.length == 2 && args[0] == "-m" }
         },
         "push" => {
-          args: [:remote, :branch],
+          args: [ :remote, :branch ],
           validator: ->(args) { args.length == 2 }
         }
       },
@@ -37,7 +37,7 @@ module JumpstartDeploy
           validator: ->(args) { args.empty? }
         },
         "exec" => {
-          args: [:command],
+          args: [ :command ],
           validator: ->(args) { !args.empty? }
         }
       },
@@ -83,7 +83,7 @@ module JumpstartDeploy
     end
 
     def self.build_command_array(command, subcommand, args, config)
-      [command, subcommand, *process_arguments(args)].compact
+      [ command, subcommand, *process_arguments(args) ].compact
     end
 
     def self.process_arguments(args)
