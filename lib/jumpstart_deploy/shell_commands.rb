@@ -1,14 +1,12 @@
 # frozen_string_literal: true
 
-require "open3"
-
 module JumpstartDeploy
   module ShellCommands
     class CommandError < StandardError; end
     class InvalidCommandError < CommandError; end
 
-    # Define command configurations with their exact argument patterns
-    COMMAND_CONFIG = {
+    # Define allowed commands with their allowed arguments
+    COMMAND_WHITELIST = {
       "git" => {
         "clone" => {
           args: [:url, :path],
@@ -42,18 +40,9 @@ module JumpstartDeploy
         }
       },
       "bin/rails" => {
-        "db:create" => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        },
-        "db:migrate" => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        },
-        "assets:precompile" => {
-          args: [],
-          validator: ->(args) { args.empty? }
-        }
+        "db:create" => 0,
+        "db:migrate" => 0,
+        "assets:precompile" => 0
       }
     }.freeze
 
