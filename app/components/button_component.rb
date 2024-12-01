@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JumpstartDeploy
   class ButtonComponent < ViewComponent::Base
     def initialize(text:, variant: :primary)

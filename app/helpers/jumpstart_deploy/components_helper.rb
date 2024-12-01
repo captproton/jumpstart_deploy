@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JumpstartDeploy
   module ComponentsHelper
     def ui_alert(message, type: :success)
@@ -8,8 +10,8 @@ module JumpstartDeploy
       render ButtonComponent.new(text: text, variant: variant)
     end
 
-    def ui_card(title:, content: nil, &block)
-      render CardComponent.new(title: title, content: content), &block
+    def ui_card(title:, content: nil, &)
+      render(CardComponent.new(title: title, content: content), &)
     end
   end
 end

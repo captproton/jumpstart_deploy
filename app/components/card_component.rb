@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 module JumpstartDeploy
   class CardComponent < ViewComponent::Base
     def initialize(title:, content: nil)
