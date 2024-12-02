@@ -119,7 +119,7 @@ RSpec.describe JumpstartDeploy::ShellCommands do
   describe "error handling" do
     it "handles command failures" do
       allow(cmd).to receive(:run!).and_raise(TTY::Command::ExitError.new)
-      
+
       expect {
         described_class.git("clone", "https://github.com/org/repo.git", "target")
       }.to raise_error(JumpstartDeploy::ShellCommands::CommandError)
@@ -133,9 +133,9 @@ RSpec.describe JumpstartDeploy::ShellCommands do
 
       it "logs errors when Rails is defined" do
         allow(cmd).to receive(:run!).and_raise(TTY::Command::ExitError.new)
-        
+
         expect(Rails.logger).to receive(:error)
-        
+
         expect {
           described_class.git("clone", "https://github.com/org/repo.git", "target")
         }.to raise_error(JumpstartDeploy::ShellCommands::CommandError)
