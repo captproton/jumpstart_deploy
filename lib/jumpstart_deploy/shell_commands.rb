@@ -113,7 +113,7 @@ module JumpstartDeploy
         path = Pathname.new(path)
 
         !path.absolute? &&
-          !path.each_filename.to_a.include?("..")
+          !path.each_filename.to_a.include?("..") &&
           path.to_s.match?(/\A[\p{Word}\.\-\/]+\z/) &&
           path.to_s.length <= 255
       end
