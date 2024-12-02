@@ -31,3 +31,7 @@ end
 
 # Start debugger with binding.b [https://github.com/ruby/debug]
 # gem "debug", ">= 1.0.0"
+
+# custom gems for this project
+gem "tty-command", "~> 0.10.1"
+# DO NOT WRITE BELOW THIS LINE. KEEP THINGS TIDY!
