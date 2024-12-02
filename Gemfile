@@ -8,6 +8,7 @@ gemspec
 gem "puma"
 gem "sqlite3"
 gem "propshaft"
+gem "psych", "~> 5.2.1"
 
 # Frontend
 gem "jsbundling-rails", "~> 1.3"
@@ -17,16 +18,20 @@ gem "tailwindcss-rails", "~> 3.0"
 
 group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
-  gem "rubocop-rails-omakase", require: false
+  gem "rubocop-rails-omakase", "~> 1.0", require: false
   gem "rubocop-rake", "~> 0.6", require: false
-  gem "rspec", "~> 3.0"
+  gem "rspec", "~> 3.13"
   # CLI tools for testing
-  gem "thor", "~> 1.3.2"
+  gem "thor", "~> 1.3"
   gem "tty-prompt", "~> 0.23"
-  gem "tty-spinner", "~> 0.9"
+  gem "tty-spinner", "~> 0.9.3"
   # API clients
-  gem "octokit", "~> 9.2.0"
-  gem "http", "~> 5.2.0"
+  gem "octokit", "~> 9.2"
+  gem "http", "~> 5.2"
+  gem "rspec-rails", "~> 7.1"
+  gem "factory_bot_rails", "~> 6.4"
+  gem "webmock", "~> 3.24"
+  gem "vcr", "~> 6.3"
 end
 
 # Start debugger with binding.b [https://github.com/ruby/debug]
