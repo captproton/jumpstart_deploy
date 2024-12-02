@@ -4,7 +4,7 @@ RSpec.describe JumpstartDeploy::Deployer do
   let(:deployer) { described_class.new }
   let(:options) { { "name" => "test-app", "team" => "engineering" } }
   let(:github_client) { instance_double(Octokit::Client) }
-  let(:repo_response) do 
+  let(:repo_response) do
     double(
       html_url: "https://github.com/org/test-app",
       ssh_url: "git@github.com:org/test-app.git",
@@ -15,7 +15,7 @@ RSpec.describe JumpstartDeploy::Deployer do
   before do
     allow(Octokit::Client).to receive(:new).and_return(github_client)
     allow(github_client).to receive(:create_repository).and_return(repo_response)
-    
+
     # Stub shell commands
     allow(JumpstartDeploy::ShellCommands).to receive(:git)
     allow(JumpstartDeploy::ShellCommands).to receive(:bundle)
@@ -41,7 +41,7 @@ RSpec.describe JumpstartDeploy::Deployer do
         expect(deployer).to receive(:configure_jumpstart).ordered
         expect(deployer).to receive(:setup_hatchbox).ordered
         expect(deployer).to receive(:display_results).ordered
-        
+
         deployer.deploy(options)
       end
     end
