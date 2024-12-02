@@ -3,8 +3,8 @@ require_relative "lib/jumpstart_deploy/version"
 Gem::Specification.new do |spec|
   spec.name        = "jumpstart_deploy"
   spec.version     = JumpstartDeploy::VERSION
-  spec.authors     = ["Your Name"]
-  spec.email       = ["your.email@example.com"]
+  spec.authors     = [ "Your Name" ]
+  spec.email       = [ "your.email@example.com" ]
   spec.homepage    = "https://github.com/captproton/jumpstart_deploy"
   spec.summary     = "Deploy Jumpstart Pro Rails apps to Hatchbox"
   spec.description = "A deployment tool for Jumpstart Pro Rails applications"
@@ -19,7 +19,7 @@ Gem::Specification.new do |spec|
   spec.add_dependency "tty-spinner"
   spec.add_dependency "octokit"
   spec.add_dependency "faraday-retry"
-  
+
   spec.add_development_dependency "sqlite3"
   spec.add_development_dependency "rspec-rails"
   spec.add_development_dependency "webmock"

@@ -8,8 +8,8 @@ require "tty-command"
 VCR.configure do |config|
   config.cassette_library_dir = "spec/fixtures/vcr_cassettes"
   config.hook_into :webmock
-  config.configure_rspec_metadata!  
-  
+  config.configure_rspec_metadata!
+
   # Filter sensitive data
   config.filter_sensitive_data('<GITHUB_TOKEN>') { ENV['GITHUB_TOKEN'] }
   config.filter_sensitive_data('<HATCHBOX_TOKEN>') { ENV['HATCHBOX_API_TOKEN'] }
@@ -35,7 +35,7 @@ RSpec.configure do |config|
   config.after(:each) do
     FileUtils.rm_rf(Dir["tmp/test_*"])
   end
-  
+
   # Set up test environment variables
   config.before(:each) do
     ENV['GITHUB_TOKEN'] = 'test_github_token'

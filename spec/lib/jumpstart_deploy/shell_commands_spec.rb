@@ -17,9 +17,9 @@ RSpec.describe JumpstartDeploy::ShellCommands do
           .and_return(double(out: 'success'))
 
         result = described_class.execute(
-          'git', 
-          'clone', 
-          'https://github.com/example/repo.git', 
+          'git',
+          'clone',
+          'https://github.com/example/repo.git',
           'local-path'
         )
         expect(result).to eq('success')
