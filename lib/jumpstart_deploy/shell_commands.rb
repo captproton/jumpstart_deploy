@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
-require 'tty-command'
-require 'pathname'
-require 'uri'
+require "tty-command"
+require "pathname"
+require "uri"
 
 module JumpstartDeploy
   module ShellCommands
@@ -10,48 +10,48 @@ module JumpstartDeploy
     class InvalidCommandError < CommandError; end
 
     COMMAND_CONFIG = {
-      'git' => {
-        'clone' => {
-          args: [:url, :path],
+      "git" => {
+        "clone" => {
+          args: [ :url, :path ],
           validator: ->(args) { valid_git_url?(args[0]) && valid_path?(args[1]) }
         },
-        'remote' => {
-          args: [:action, :name, :url],
+        "remote" => {
+          args: [ :action, :name, :url ],
           validator: ->(args) { %w[add remove].include?(args[0]) && args.length.between?(2, 3) }
         },
-        'add' => {
-          args: [:path],
+        "add" => {
+          args: [ :path ],
           validator: ->(args) { args.length == 1 && valid_path?(args[0]) }
         },
-        'commit' => {
-          args: ['-m', :message],
-          validator: ->(args) { args.length == 2 && args[0] == '-m' && safe_message?(args[1]) }
+        "commit" => {
+          args: [ "-m", :message ],
+          validator: ->(args) { args.length == 2 && args[0] == "-m" && safe_message?(args[1]) }
         },
-        'push' => {
-          args: [:remote, :branch],
+        "push" => {
+          args: [ :remote, :branch ],
           validator: ->(args) { args.length == 2 && valid_remote?(args[0]) && valid_branch?(args[1]) }
         }
       },
-      'bundle' => {
-        'install' => {
+      "bundle" => {
+        "install" => {
           args: [],
           validator: ->(args) { args.empty? }
         },
-        'exec' => {
-          args: [:command],
+        "exec" => {
+          args: [ :command ],
           validator: ->(args) { !args.empty? && valid_bundle_exec_command?(args) }
         }
       },
-      'bin/rails' => {
-        'db:create' => {
+      "bin/rails" => {
+        "db:create" => {
           args: [],
           validator: ->(args) { args.empty? }
         },
-        'db:migrate' => {
+        "db:migrate" => {
           args: [],
           validator: ->(args) { args.empty? }
         },
-        'assets:precompile' => {
+        "assets:precompile" => {
           args: [],
           validator: ->(args) { args.empty? }
         }
@@ -61,9 +61,9 @@ module JumpstartDeploy
     class << self
       def execute(command, subcommand, *args, dir: nil)
         validate_command!(command, subcommand, args)
-        
+
         cmd = TTY::Command.new(printer: :null)
-        
+
         Dir.chdir(dir || Dir.pwd) do
           result = cmd.run!(command, subcommand, *args)
           result.out
@@ -102,7 +102,7 @@ module JumpstartDeploy
         valid_scheme = %w[http https ssh git].include?(uri.scheme)
         valid_host = !uri.host.nil? && !uri.host.empty?
         valid_length = url.length <= 2048
-        
+
         valid_scheme && valid_host && valid_length
       rescue URI::InvalidURIError
         false
@@ -111,9 +111,9 @@ module JumpstartDeploy
       def valid_path?(path)
         return false if path.nil? || path.empty?
         path = Pathname.new(path)
-        
-        !path.absolute? && 
-          !path.each_filename.to_a.include?('..') &&
+
+        !path.absolute? &&
+          !path.each_filename.to_a.include?("..") &&
           path.to_s.match?(/\A[\p{Word}\.\-\/]+\z/) &&
           path.to_s.length <= 255
       end
@@ -137,15 +137,15 @@ module JumpstartDeploy
     end
 
     def self.git(subcommand, *args, dir: nil)
-      execute('git', subcommand, *args, dir: dir)
+      execute("git", subcommand, *args, dir: dir)
     end
 
     def self.rails(subcommand, *args, dir: nil)
-      execute('bin/rails', subcommand, *args, dir: dir)
+      execute("bin/rails", subcommand, *args, dir: dir)
     end
 
     def self.bundle(subcommand, *args, dir: nil)
-      execute('bundle', subcommand, *args, dir: dir)
+      execute("bundle", subcommand, *args, dir: dir)
     end
   end
 end
