@@ -6,24 +6,26 @@ Gem::Specification.new do |spec|
   spec.authors     = [ "captproton" ]
   spec.email       = [ "carl@wdwhub.net" ]
   spec.homepage    = "https://github.com/captproton/jumpstart_deploy"
-  spec.summary     = "A streamlined, repeatable process for deploying fresh Jumpstart Pro Rails apps to Hatchbox throughout your day." 
+  # rubocop:disable Layout/IndentationWidth, Layout/LineLength
+  spec.summary     = "A streamlined, repeatable process for deploying fresh Jumpstart Pro Rails apps to Hatchbox throughout your day."
   spec.description = "This tool will: Prompt for app name and any additional options
 Create a GitHub repo
 Set up Jumpstart Pro
 Configure Hatchbox
 Show you the URLs when done"
+  # rubocop:enable Layout/IndentationWidth, Layout/LineLength
   spec.license     = "MIT"
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the "allowed_push_host"
   # to allow pushing to a single host or delete this section to allow pushing to any host.
-  
+
 
   spec.metadata["homepage_uri"] = spec.homepage
   spec.metadata["source_code_uri"] = "https://github.com/captproton/jumpstart_deploy"
   spec.metadata["changelog_uri"] = "https://github.com/captproton/jumpstart_deploy/blob/main/CHANGELOG.md"
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
-  spec.test_files = Dir["spec/**/*"]
+    spec.test_files = Dir["spec/**/*"]
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end
 

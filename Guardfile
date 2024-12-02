@@ -19,7 +19,7 @@
 # daemon: false                        # runs the server as a daemon.
 # debugger: false                      # enable ruby-debug gem.
 # environment: 'development'           # changes server environment.
-# force_run: false                     # kills any process that's holding the listen port before attempting to (re)start Rails.
+# force_run: false                     # Kills any process holding the listen port before restarting Rails.
 # pid_file: 'tmp/pids/[RAILS_ENV].pid' # specify your pid_file.
 # host: 'localhost'                    # server hostname.
 # port: 3000                           # server port number.
@@ -49,20 +49,38 @@ guard :rspec, cmd: "bundle exec rspec" do
   require "guard/rspec/dsl"
   dsl = Guard::RSpec::Dsl.new(self)
 
-  # Feel free to open issues for suggestions and improvements
-
   # RSpec files
   rspec = dsl.rspec
   watch(rspec.spec_helper) { rspec.spec_dir }
   watch(rspec.spec_support) { rspec.spec_dir }
   watch(rspec.spec_files)
+end
+
+guard :rspec, cmd: "bundle exec rspec" do
+  require "guard/rspec/dsl"
+  dsl = Guard::RSpec::Dsl.new(self)
 
   # Ruby files
   ruby = dsl.ruby
   dsl.watch_spec_files_for(ruby.lib_files)
+end
+
+guard :rspec, cmd: "bundle exec rspec" do
+  require "guard/rspec/dsl"
+  dsl = Guard::RSpec::Dsl.new(self)
 
   # Rails files
-  rails = dsl.rails(view_extensions: %w(erb haml slim))
+  rails = dsl.rails(view_extensions: %w[erb haml slim])
+  dsl.watch_spec_files_for(rails.app_files)
+  dsl.watch_spec_files_for(rails.views)
+end
+
+guard :rspec, cmd: "bundle exec rspec" do
+  require "guard/rspec/dsl"
+  dsl = Guard::RSpec::Dsl.new(self)
+
+  # Rails files
+  rails = dsl.rails(view_extensions: %w[erb haml slim])
   dsl.watch_spec_files_for(rails.app_files)
   dsl.watch_spec_files_for(rails.views)
 
