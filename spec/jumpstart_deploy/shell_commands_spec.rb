@@ -1,4 +1,26 @@
+# spec/jumpstart_deploy/shell_commands_spec.rb
 require "spec_helper"
+
+# ShellCommands Test Suite - MVP Focus
+#
+# These tests verify the core functionality needed for basic deployment workflows.
+# The test suite focuses on:
+# 1. Essential deployment commands (git clone, push, etc.)
+# 2. Basic security validations
+# 3. Common GitHub repository operations
+# 4. Standard Rails deployment tasks
+#
+# Out of scope for MVP:
+# - Complex SSH URL formats
+# - Non-GitHub repositories
+# - Development-only commands
+# - Advanced git operations
+#
+# Security boundaries for MVP:
+# - GitHub repositories only
+# - Basic command injection prevention
+# - Simple path traversal protection
+# - Standard SSL/SSH URL validation
 
 RSpec.describe JumpstartDeploy::ShellCommands do
   let(:cmd) { instance_double(TTY::Command) }
