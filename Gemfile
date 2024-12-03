@@ -32,6 +32,7 @@ group :development, :test do
   gem "factory_bot_rails", "~> 6.4"
   gem "webmock", "~> 3.24"
   gem "vcr", "~> 6.3"
+  gem "pry-byebug", "~> 3.10"
 end
 
 # Start debugger with binding.b [https://github.com/ruby/debug]

@@ -1,9 +1,8 @@
-require File.expand_path("../dummy/config/environment.rb", __FILE__)
-
-require 'rspec/rails'
-require 'factory_bot_rails'
-require 'webmock/rspec'
-require 'vcr'
+require "bundler/setup"
+require "jumpstart_deploy"
+require "webmock/rspec"
+require "vcr"
+require "tty-command"
 
 # Configure VCR for recording HTTP interactions
 VCR.configure do |config|
@@ -17,37 +16,20 @@ VCR.configure do |config|
 end
 
 RSpec.configure do |config|
-  # rspec-expectations config
   config.expect_with :rspec do |expectations|
     expectations.include_chain_clauses_in_custom_matcher_descriptions = true
   end
 
-  # rspec-mocks config
   config.mock_with :rspec do |mocks|
     mocks.verify_partial_doubles = true
   end
 
-  # Inherit metadata
   config.shared_context_metadata_behavior = :apply_to_host_groups
-
-  # Enable flags like --only-failures and --next-failure
-  config.example_status_persistence_file_path = ".rspec_status"
-
-  # Disable RSpec exposing methods globally on `Module` and `main`
-  config.disable_monkey_patching!
 
   # Detailed output for single specs
   if config.files_to_run.one?
     config.default_formatter = "doc"
   end
-
-  # Random order execution
-  config.order = :random
-  Kernel.srand config.seed
-
-  # Factory Bot configuration
-  config.include FactoryBot::Syntax::Methods
-  config.include JumpstartDeploy::Engine.routes.url_helpers
 
   # Clean up test files after each example
   config.after(:each) do
