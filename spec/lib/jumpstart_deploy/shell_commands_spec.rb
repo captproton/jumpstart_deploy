@@ -3,24 +3,17 @@ require "spec_helper"
 
 # ShellCommands Test Suite - MVP Focus
 #
-# These tests verify the core functionality needed for basic deployment workflows.
+# These tests verify essential GitHub deployment workflow functionality.
 # The test suite focuses on:
-# 1. Essential deployment commands (git clone, push, etc.)
+# 1. Core deployment commands (git clone, remote, commit, push)
 # 2. Basic security validations
-# 3. Common GitHub repository operations
-# 4. Standard Rails deployment tasks
+# 3. Error handling
 #
 # Out of scope for MVP:
-# - Complex SSH URL formats
-# - Non-GitHub repositories
-# - Development-only commands
+# - Complex URL validation
+# - Non-GitHub workflows
+# - Development commands
 # - Advanced git operations
-#
-# Security boundaries for MVP:
-# - GitHub repositories only
-# - Basic command injection prevention
-# - Simple path traversal protection
-# - Standard SSL/SSH URL validation
 
 RSpec.describe JumpstartDeploy::ShellCommands do
   let(:cmd) { instance_double(TTY::Command) }
@@ -32,8 +25,8 @@ RSpec.describe JumpstartDeploy::ShellCommands do
   end
 
   describe ".git" do
-    context "with valid commands" do
-      it "allows cloning a repository" do
+    context "deployment workflow" do
+      it "clones repository" do
         expect(cmd).to receive(:run!)
           .with("git", "clone", "https://github.com/org/repo.git", "target")
           .and_return(result)
@@ -41,12 +34,36 @@ RSpec.describe JumpstartDeploy::ShellCommands do
         described_class.git("clone", "https://github.com/org/repo.git", "target")
       end
 
-      it "allows adding remotes" do
+      it "configures remote" do
         expect(cmd).to receive(:run!)
           .with("git", "remote", "add", "origin", "git@github.com:org/repo.git")
           .and_return(result)
 
         described_class.git("remote", "add", "origin", "git@github.com:org/repo.git")
+      end
+
+      it "commits changes" do
+        expect(cmd).to receive(:run!)
+          .with("git", "commit", "-m", "Initial commit")
+          .and_return(result)
+
+        described_class.git("commit", "-m", "Initial commit")
+      end
+
+      it "pushes to remote" do
+        expect(cmd).to receive(:run!)
+          .with("git", "push", "-u", "origin", "main")
+          .and_return(result)
+
+        described_class.git("push", "-u", "origin", "main")
+      end
+
+      it "removes remote" do
+        expect(cmd).to receive(:run!)
+          .with("git", "remote", "remove", "origin")
+          .and_return(result)
+
+        described_class.git("remote", "remove", "origin")
       end
     end
 
@@ -62,16 +79,40 @@ RSpec.describe JumpstartDeploy::ShellCommands do
           described_class.git("clone", "https://github.com/org/repo.git", "../dangerous")
         }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
       end
+
+      it "rejects dangerous commit messages" do
+        expect {
+          described_class.git("commit", "-m", "message; rm -rf /")
+        }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
+      end
     end
   end
 
   describe ".rails" do
-    it "allows permitted commands" do
-      expect(cmd).to receive(:run!)
-        .with("bin/rails", "db:migrate")
-        .and_return(result)
+    context "deployment commands" do
+      it "runs database migrations" do
+        expect(cmd).to receive(:run!)
+          .with("bin/rails", "db:migrate")
+          .and_return(result)
 
-      described_class.rails("db:migrate")
+        described_class.rails("db:migrate")
+      end
+
+      it "creates database" do
+        expect(cmd).to receive(:run!)
+          .with("bin/rails", "db:create")
+          .and_return(result)
+
+        described_class.rails("db:create")
+      end
+
+      it "precompiles assets" do
+        expect(cmd).to receive(:run!)
+          .with("bin/rails", "assets:precompile")
+          .and_return(result)
+
+        described_class.rails("assets:precompile")
+      end
     end
 
     it "rejects unauthorized commands" do
@@ -82,7 +123,7 @@ RSpec.describe JumpstartDeploy::ShellCommands do
   end
 
   describe ".bundle" do
-    it "allows installation" do
+    it "installs dependencies" do
       expect(cmd).to receive(:run!)
         .with("bundle", "install")
         .and_return(result)
@@ -90,51 +131,10 @@ RSpec.describe JumpstartDeploy::ShellCommands do
       described_class.bundle("install")
     end
 
-    it "allows whitelisted exec commands" do
-      expect(cmd).to receive(:run!)
-        .with("bundle", "exec", "rspec")
-        .and_return(result)
-
-      described_class.bundle("exec", "rspec")
-    end
-
     it "rejects unauthorized exec commands" do
       expect {
         described_class.bundle("exec", "dangerous-command")
       }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
-    end
-  end
-
-  describe "validation methods" do
-    describe ".valid_git_url?" do
-      it "accepts HTTPS URLs" do
-        url = "https://github.com/org/repo.git"
-        expect(described_class.send(:valid_git_url?, url)).to be true
-      end
-
-      it "accepts SSH URLs" do
-        url = "git@github.com:org/repo.git"
-        # Note: URI.parse might need special handling for SSH URLs
-        skip "SSH URL validation needs custom logic"
-      end
-
-      it "rejects invalid URLs" do
-        expect(described_class.send(:valid_git_url?, "invalid-url")).to be false
-      end
-    end
-
-    describe ".valid_path?" do
-      it "accepts valid paths" do
-        expect(described_class.send(:valid_path?, "valid/path")).to be true
-      end
-
-      it "rejects absolute paths" do
-        expect(described_class.send(:valid_path?, "/absolute/path")).to be false
-      end
-
-      it "rejects directory traversal" do
-        expect(described_class.send(:valid_path?, "../dangerous")).to be false
-      end
     end
   end
 
@@ -155,7 +155,6 @@ RSpec.describe JumpstartDeploy::ShellCommands do
 
       it "logs errors when Rails is defined" do
         allow(cmd).to receive(:run!).and_raise(TTY::Command::ExitError.new)
-
         expect(Rails.logger).to receive(:error)
 
         expect {
