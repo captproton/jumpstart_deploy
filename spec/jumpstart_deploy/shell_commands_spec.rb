@@ -1,3 +1,4 @@
+# spec/jumpstart_deploy/shell_commands_spec.rb
 require "spec_helper"
 
 RSpec.describe JumpstartDeploy::ShellCommands do
