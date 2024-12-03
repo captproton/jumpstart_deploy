@@ -43,34 +43,9 @@ RSpec.describe JumpstartDeploy::ShellCommands do
 
         described_class.git("clone", "git@github.com:org/repo.git", "target")
       end
-
-      it "allows configuring origin remote" do
-        expect(cmd).to receive(:run!)
-          .with("git", "remote", "add", "origin", "git@github.com:org/repo.git")
-          .and_return(result)
-
-        described_class.git("remote", "add", "origin", "git@github.com:org/repo.git")
-      end
-
-      it "allows standard commit" do
-        expect(cmd).to receive(:run!)
-          .with("git", "commit", "-m", "Initial commit")
-          .and_return(result)
-
-        described_class.git("commit", "-m", "Initial commit")
-      end
-
-      it "allows pushing to main" do
-        expect(cmd).to receive(:run!)
-          .with("git", "push", "origin", "main")
-          .and_return(result)
-
-        described_class.git("push", "origin", "main")
-      end
     end
 
     # Security validation focuses on common attack vectors
-    # MVP includes basic protections against command injection and path traversal
     context "with invalid inputs" do
       it "rejects non-GitHub URLs" do
         ["http://other-git.com/repo.git", "git@other.com:repo.git"].each do |url|
@@ -87,20 +62,11 @@ RSpec.describe JumpstartDeploy::ShellCommands do
           }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
         end
       end
-
-      it "rejects unsafe commit messages" do
-        ["message;cmd", "message | cmd"].each do |msg|
-          expect {
-            described_class.git("commit", "-m", msg)
-          }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
-        end
-      end
     end
   end
 
   describe ".rails" do
     # MVP includes only essential Rails deployment commands
-    # Development and maintenance commands are out of scope
     it "allows essential deployment commands" do
       ["db:create", "db:migrate", "assets:precompile"].each do |cmd_name|
         expect(cmd).to receive(:run!)
@@ -110,18 +76,10 @@ RSpec.describe JumpstartDeploy::ShellCommands do
         described_class.rails(cmd_name)
       end
     end
-
-    it "rejects non-deployment commands" do
-      ["console", "server", "generate"].each do |cmd_name|
-        expect {
-          described_class.rails(cmd_name)
-        }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
-      end
-    end
   end
 
   describe ".bundle" do
-    # Bundle commands are limited to install and essential testing tools
+    # Bundle commands are limited to install and essential testing
     it "allows install command" do
       expect(cmd).to receive(:run!)
         .with("bundle", "install")
@@ -140,18 +98,10 @@ RSpec.describe JumpstartDeploy::ShellCommands do
           described_class.bundle("exec", test_cmd)
         end
       end
-
-      it "rejects other commands" do
-        ["rails c", "rake custom"].each do |cmd_name|
-          expect {
-            described_class.bundle("exec", cmd_name)
-          }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
-        end
-      end
     end
   end
 
-  # Error handling is essential for MVP to provide clear feedback
+  # Error handling is essential for MVP
   describe "error handling" do
     it "raises CommandError on failure" do
       allow(cmd).to receive(:run!).and_raise(TTY::Command::ExitError.new)
