@@ -42,7 +42,7 @@ RSpec.describe JumpstartDeploy::ShellCommands do
         described_class.git("remote", "add", "origin", "git@github.com:org/repo.git")
       end
 
-      it "commits changes" do 
+      it "commits changes" do
         expect(cmd).to receive(:run!)
           .with("git", "commit", "-m", "Initial commit")
           .and_return(result)
@@ -55,7 +55,7 @@ RSpec.describe JumpstartDeploy::ShellCommands do
           .with("git", "push", "-u", "origin", "main")
           .and_return(result)
 
-        described_class.git("push", "-u", "origin", "main") 
+        described_class.git("push", "-u", "origin", "main")
       end
 
       it "removes remote" do
@@ -83,7 +83,7 @@ RSpec.describe JumpstartDeploy::ShellCommands do
       it "rejects dangerous commit messages" do
         expect {
           described_class.git("commit", "-m", "message; rm -rf /")
-        }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError) 
+        }.to raise_error(JumpstartDeploy::ShellCommands::InvalidCommandError)
       end
     end
   end
