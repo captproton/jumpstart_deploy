@@ -29,8 +29,15 @@ module JumpstartDeploy
           validator: ->(args) { args.length == 2 && args[0] == "-m" && safe_message?(args[1]) }
         },
         "push" => {
-          args: [ :remote, :branch ],
-          validator: ->(args) { args.length == 2 && valid_remote?(args[0]) && valid_branch?(args[1]) }
+          args: [ :flags, :remote, :branch ],
+          validator: ->(args) {
+            return false if args.empty?
+            if args[0] == "-u"
+              args.length == 3 && valid_remote?(args[1]) && valid_branch?(args[2])
+            else
+              args.length == 2 && valid_remote?(args[0]) && valid_branch?(args[1])
+            end
+          }
         }
       },
       "bundle" => {
@@ -71,7 +78,7 @@ module JumpstartDeploy
         end
       rescue TTY::Command::ExitError => e
         Rails.logger.error("Command error: #{e.message}") if defined?(Rails)
-        raise CommandError, "Command execution failed"
+        raise CommandError.new(e.message.to_s)
       end
 
       private
