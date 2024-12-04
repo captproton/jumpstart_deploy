@@ -1,3 +1,4 @@
+# spec/lib/jumpstart_deploy/shell_commands_spec.rb
 require "spec_helper"
 require "tty-command"
 require_relative "../../../lib/jumpstart_deploy/shell_commands"
