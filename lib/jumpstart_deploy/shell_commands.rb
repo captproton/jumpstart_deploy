@@ -13,23 +13,23 @@ module JumpstartDeploy
     COMMAND_CONFIG = {
       "git" => {
         "clone" => {
-          args: [:url, :path],
+          args: [ :url, :path ],
           validator: ->(args) { valid_git_url?(args[0]) && valid_path?(args[1]) }
         },
         "remote" => {
-          args: [:action, :name, :url],
+          args: [ :action, :name, :url ],
           validator: ->(args) { %w[add remove].include?(args[0]) && args.length.between?(2, 3) }
         },
         "add" => {
-          args: [:path],
+          args: [ :path ],
           validator: ->(args) { args.length == 1 && valid_path?(args[0]) }
         },
         "commit" => {
-          args: ["-m", :message],
+          args: [ "-m", :message ],
           validator: ->(args) { args.length == 2 && args[0] == "-m" && safe_message?(args[1]) }
         },
         "push" => {
-          args: [:flags, :remote, :branch],
+          args: [ :flags, :remote, :branch ],
           validator: ->(args) {
             return false if args.empty?
             if args[0] == "-u"
@@ -46,7 +46,7 @@ module JumpstartDeploy
           validator: ->(args) { args.empty? }
         },
         "exec" => {
-          args: [:command],
+          args: [ :command ],
           validator: ->(args) { !args.empty? && valid_bundle_exec_command?(args) }
         }
       },
