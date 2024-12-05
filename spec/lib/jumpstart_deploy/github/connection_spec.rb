@@ -14,7 +14,7 @@ RSpec.describe JumpstartDeploy::GitHub::Connection do
     context "without access token" do
       it "raises error when GITHUB_TOKEN not set" do
         ENV["GITHUB_TOKEN"] = nil
-        expect { described_class.new }.to raise_error(described_class::Error)
+        expect { described_class.new }.to raise_error(JumpstartDeploy::GitHub::Error)
       end
 
       it "uses GITHUB_TOKEN environment variable" do

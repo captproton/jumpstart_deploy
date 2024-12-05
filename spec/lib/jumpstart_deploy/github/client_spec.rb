@@ -6,7 +6,7 @@ RSpec.describe JumpstartDeploy::GitHub::Client do
   let(:connection) { instance_double(JumpstartDeploy::GitHub::Connection) }
   let(:octokit_client) { instance_double(Octokit::Client) }
   let(:client) { described_class.new(connection) }
-  
+
   before do
     allow(connection).to receive(:client).and_return(octokit_client)
   end
@@ -20,8 +20,16 @@ RSpec.describe JumpstartDeploy::GitHub::Client do
         ssh_url: "git@github.com:org/test-app.git"
       }
     end
-    
-    let(:octokit_response) { double("response", to_h: repo_attributes) }
+
+    # Updated to use basic double instead of instance_double for response
+    let(:octokit_response) do
+      double(
+        name: repo_attributes[:name],
+        full_name: repo_attributes[:full_name],
+        html_url: repo_attributes[:html_url],
+        ssh_url: repo_attributes[:ssh_url]
+      )
+    end
 
     it "creates private repository" do
       expect(octokit_client).to receive(:create_repository)
@@ -30,17 +38,20 @@ RSpec.describe JumpstartDeploy::GitHub::Client do
 
       repository = client.create_repository("test-app")
       expect(repository.name).to eq "test-app"
+      expect(repository.full_name).to eq "org/test-app"
     end
 
     context "with team access" do
       it "grants team access" do
         expect(octokit_client).to receive(:create_repository)
+          .with("test-app", hash_including(private: true))
           .and_return(octokit_response)
-        
+
         expect(octokit_client).to receive(:add_team_repository)
           .with("engineering", "org/test-app", permission: "push")
 
-        client.create_repository("test-app", team: "engineering")
+        repository = client.create_repository("test-app", team: "engineering")
+        expect(repository.full_name).to eq "org/test-app"
       end
     end
 
@@ -56,7 +67,7 @@ RSpec.describe JumpstartDeploy::GitHub::Client do
       it "handles team not found error" do
         allow(octokit_client).to receive(:create_repository)
           .and_return(octokit_response)
-        
+
         allow(octokit_client).to receive(:add_team_repository)
           .and_raise(Octokit::NotFound)
 
