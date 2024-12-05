@@ -27,7 +27,7 @@ module JumpstartDeploy
 
       def configure_environment(app_id, env_vars)
         response = connection.client.post do |req|
-          req.url "/apps/#{app_id}/env_vars"  
+          req.url "/apps/#{app_id}/env_vars"
           req.body = { env_vars: env_vars }.to_json
         end
 

@@ -7,7 +7,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
   let(:connection) { instance_double(JumpstartDeploy::Hatchbox::Connection) }
   let(:faraday_client) { instance_double(Faraday::Connection) }
   let(:client) { described_class.new(connection) }
-  
+
   before do
     allow(connection).to receive(:client).and_return(faraday_client)
   end
