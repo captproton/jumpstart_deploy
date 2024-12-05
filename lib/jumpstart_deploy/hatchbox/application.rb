@@ -8,7 +8,7 @@ module JumpstartDeploy
       def initialize(attributes = {})
         @id = attributes["id"]
         @name = attributes["name"]
-        @repository = attributes["repository"] 
+        @repository = attributes["repository"]
         @framework = attributes["framework"]
       end
     end
