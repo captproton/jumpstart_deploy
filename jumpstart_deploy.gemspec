@@ -5,8 +5,8 @@ require_relative "lib/jumpstart_deploy/version"
 Gem::Specification.new do |spec|
   spec.name        = "jumpstart_deploy"
   spec.version     = JumpstartDeploy::VERSION
-  spec.authors     = ["Carl Tanner"]
-  spec.email       = ["carl@wdwhub.net"]
+  spec.authors     = [ "Carl Tanner" ]
+  spec.email       = [ "carl@wdwhub.net" ]
   spec.summary     = "Deployment automation for Jumpstart Pro apps"
   spec.description = "Automates deployment of Jumpstart Pro applications to Hatchbox"
   spec.homepage    = "https://github.com/captproton/jumpstart_deploy"
@@ -14,8 +14,8 @@ Gem::Specification.new do |spec|
 
   spec.files         = Dir["lib/**/*", "exe/*", "MIT-LICENSE", "Rakefile", "README.md"]
   spec.bindir        = "exe"
-  spec.executables   = ["jumpstart_deploy"]
-  spec.require_paths = ["lib"]
+  spec.executables   = [ "jumpstart_deploy" ]
+  spec.require_paths = [ "lib" ]
 
   spec.required_ruby_version = ">= 2.7.0"
 
@@ -30,5 +30,4 @@ Gem::Specification.new do |spec|
 
   # Development dependencies are handled in Gemfile
   # This prevents the version conflicts we were seeing
-
 end
