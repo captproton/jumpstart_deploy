@@ -9,7 +9,7 @@ module JumpstartDeploy
 
       def initialize(token: nil, connection: nil)
         @token = token || ENV["HATCHBOX_API_TOKEN"]
-        raise Error, "HATCHBOX_API_TOKEN not set" if @token.nil? && connection.nil?
+        raise ClientError, "HATCHBOX_API_TOKEN not set" if @token.nil? && connection.nil?
         @connection = connection || build_connection
       end
 
@@ -20,14 +20,14 @@ module JumpstartDeploy
         end
         parse_response(response)
       rescue Faraday::Error => e
-        raise Error, "HTTP request failed: #{e.message}"
+        raise ClientError, "HTTP request failed: #{e.message}"
       end
 
       def get(path)
         response = connection.get(path)
         parse_response(response)
       rescue Faraday::Error => e
-        raise Error, "HTTP request failed: #{e.message}"
+        raise ClientError, "HTTP request failed: #{e.message}"
       end
 
       def create_application(name:, repository:, framework: "rails")
@@ -56,7 +56,7 @@ module JumpstartDeploy
         return response.body if response.success?
 
         error_message = response.body["error"] || response.body["message"] || "Request failed"
-        raise Error, error_message
+        raise ClientError, error_message
       end
     end
   end
