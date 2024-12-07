@@ -8,11 +8,13 @@ RSpec.describe JumpstartDeploy::CLI do
   before do
     allow(JumpstartDeploy::Deployer).to receive(:new).and_return(deployer)
     allow(TTY::Prompt).to receive(:new).and_return(prompt)
+    # Always set up the optional team prompt to return nil
+    allow(prompt).to receive(:ask).with("GitHub team name (optional):").and_return(nil)
   end
 
   describe "#new" do
     context "with complete options" do
-      let(:options) { { "name" => "test-app", "team" => "engineering" } }
+      let(:options) { { "name" => "test_app", "team" => "engineering" } }
 
       it "creates a new deployment with provided options" do
         expect(deployer).to receive(:deploy).with(options)
@@ -25,14 +27,14 @@ RSpec.describe JumpstartDeploy::CLI do
 
       before do
         allow(prompt).to receive(:ask).with("What's the name of your app?", required: true)
-          .and_return("test-app")
+          .and_return("test_app")
         allow(prompt).to receive(:ask).with("GitHub team name (optional):")
           .and_return("engineering")
       end
 
       it "prompts for missing information" do
         expect(deployer).to receive(:deploy)
-          .with({ "name" => "test-app", "team" => "engineering" })
+          .with({ "name" => "test_app", "team" => "engineering" })
         cli.new(options)
       end
     end
@@ -40,14 +42,19 @@ RSpec.describe JumpstartDeploy::CLI do
     context "with invalid input" do
       it "rejects invalid application names" do
         expect {
-          cli.new({ "name" => "Invalid App Name!" })
-        }.to raise_error(ArgumentError, /Invalid app name/)
+          cli.new({ "name" => "Invalid-App-Name" })
+        }.to raise_error(ArgumentError, /must be 3-63 characters, lowercase alphanumeric and underscores only/)
+      end
+
+      it "accepts valid app names" do
+        expect(deployer).to receive(:deploy).with({ "name" => "valid_app_name" })
+        cli.new({ "name" => "valid_app_name" })
       end
 
       it "rejects invalid team names" do
         expect {
-          cli.new({ "name" => "valid-app", "team" => "Invalid Team!" })
-        }.to raise_error(ArgumentError, /Invalid team name/)
+          cli.new({ "name" => "valid_app", "team" => "Invalid Team!" })
+        }.to raise_error(ArgumentError, /must be lowercase alphanumeric and hyphens only/)
       end
     end
   end

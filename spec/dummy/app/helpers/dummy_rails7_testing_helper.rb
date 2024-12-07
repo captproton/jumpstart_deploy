@@ -1,2 +1,0 @@
-module DummyRails7TestingHelper
-end

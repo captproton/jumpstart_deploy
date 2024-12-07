@@ -5,8 +5,6 @@ require "faraday/retry"
 
 module JumpstartDeploy
   module Hatchbox
-    class Error < StandardError; end
-
     class Connection
       API_URL = "https://app.hatchbox.io/api/v1"
 
@@ -53,12 +51,12 @@ module JumpstartDeploy
 
       def fetch_access_token
         ENV.fetch("HATCHBOX_API_TOKEN") do
-          raise Error, "HATCHBOX_API_TOKEN environment variable is not set"
+          raise JumpstartDeploy::Hatchbox::Error, "HATCHBOX_API_TOKEN environment variable is not set"
         end
       end
 
       def validate_token!
-        raise Error, "Access token cannot be blank" if @access_token.to_s.strip.empty?
+        raise JumpstartDeploy::Hatchbox::Error, "Access token cannot be blank" if @access_token.to_s.strip.empty?
       end
     end
   end

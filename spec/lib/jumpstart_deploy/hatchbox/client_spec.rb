@@ -1,92 +1,64 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "jumpstart_deploy/hatchbox/client"
 
 RSpec.describe JumpstartDeploy::Hatchbox::Client do
-  let(:connection) { instance_double(JumpstartDeploy::Hatchbox::Connection) }
-  let(:faraday_client) { instance_double(Faraday::Connection) }
-  let(:client) { described_class.new(connection) }
+  let(:token) { "test_token" }
+  let(:client) { described_class.new(token: token) }
 
-  before do
-    allow(connection).to receive(:client).and_return(faraday_client)
-  end
-
-  describe "#create_application" do
-    let(:app_params) do
-      {
-        name: "test-app",
-        repository: "org/test-app",
-        framework: "rails"
-      }
+  describe "#initialize" do
+    it "accepts a token" do
+      expect { client }.not_to raise_error
     end
 
-    let(:response_body) do
-      {
-        "id" => 123,
-        "name" => "test-app",
-        "repository" => "org/test-app",
-        "framework" => "rails"
-      }
+    it "uses HATCHBOX_API_TOKEN environment variable" do
+      ENV["HATCHBOX_API_TOKEN"] = "env_token"
+      expect { described_class.new }.not_to raise_error
     end
 
-    let(:response) do
-      instance_double(
-        Faraday::Response,
-        success?: true,
-        body: response_body
-      )
-    end
-
-    before do
-      allow(faraday_client).to receive(:post).and_yield(
-        instance_double(Faraday::Request).as_null_object
-      ).and_return(response)
-    end
-
-    it "creates application with proper parameters" do
-      expect(client.create_application(**app_params))
-        .to be_a(JumpstartDeploy::Hatchbox::Application)
-    end
-
-    context "with API error" do
-      let(:response) do
-        instance_double(
-          Faraday::Response,
-          success?: false,
-          body: { "error" => "Invalid params" }
-        )
-      end
-
-      it "raises error with message" do
-        expect {
-          client.create_application(**app_params)
-        }.to raise_error(JumpstartDeploy::Hatchbox::Error, "Invalid params")
-      end
+    it "raises error when no token available" do
+      ENV["HATCHBOX_API_TOKEN"] = nil
+      expect { described_class.new }.to raise_error(JumpstartDeploy::Hatchbox::Error)
     end
   end
 
-  describe "#configure_environment" do
-    let(:app_id) { 123 }
-    let(:env_vars) do
-      {
-        "RAILS_ENV" => "production",
-        "RAILS_LOG_TO_STDOUT" => "true"
-      }
+  describe "API requests", vcr: { cassette_name: "hatchbox_api" } do
+    let(:app_id) { "123" }
+
+    describe "#post" do
+      let(:data) { { name: "test app" } }
+
+      it "makes POST request with JSON data" do
+        VCR.use_cassette("hatchbox/create_app") do
+          response = client.post("apps", data)
+          expect(response).to include("id")
+        end
+      end
+
+      it "handles API errors" do
+        VCR.use_cassette("hatchbox/create_app_error") do
+          expect {
+            client.post("apps", {})
+          }.to raise_error(JumpstartDeploy::Hatchbox::Error)
+        end
+      end
     end
 
-    let(:response) do
-      instance_double(Faraday::Response, success?: true, body: "")
-    end
+    describe "#get" do
+      it "makes GET request" do
+        VCR.use_cassette("hatchbox/get_app") do
+          response = client.get("apps/#{app_id}")
+          expect(response).to include("id" => app_id)
+        end
+      end
 
-    before do
-      allow(faraday_client).to receive(:post).and_yield(
-        instance_double(Faraday::Request).as_null_object
-      ).and_return(response)
-    end
-
-    it "configures environment variables" do
-      expect(client.configure_environment(app_id, env_vars)).to be true
+      it "handles API errors" do
+        VCR.use_cassette("hatchbox/get_app_error") do
+          expect {
+            client.get("apps/invalid")
+          }.to raise_error(JumpstartDeploy::Hatchbox::Error)
+        end
+      end
     end
   end
 end

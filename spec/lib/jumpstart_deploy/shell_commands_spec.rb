@@ -3,23 +3,9 @@ require "spec_helper"
 require "tty-command"
 require_relative "../../../lib/jumpstart_deploy/shell_commands"
 
-# ShellCommands Test Suite - MVP Focus
-#
-# These tests verify essential GitHub deployment workflow functionality.
-# The test suite focuses on:
-# 1. Core deployment commands (git clone, remote, commit, push)
-# 2. Basic security validations
-# 3. Error handling
-#
-# Out of scope for MVP:
-# - Complex URL validation
-# - Non-GitHub workflows
-# - Development commands
-# - Advanced git operations
-
 RSpec.describe JumpstartDeploy::ShellCommands do
   let(:cmd) { instance_double(TTY::Command) }
-  let(:result) { instance_double(TTY::Command::Result, out: "command output", status: 0) }
+  let(:result) { instance_double(TTY::Command::Result, out: "command output", err: "", status: 0) }
 
   before do
     allow(TTY::Command).to receive(:new).and_return(cmd)
