@@ -23,7 +23,7 @@ module JumpstartDeploy
 
     def validate_options(options)
       validated = {}
-      
+
       # Validate app name
       name = options["name"] || @prompt.ask("What's the name of your app?", required: true)
       validate_app_name!(name)

@@ -5,9 +5,12 @@ module JumpstartDeploy
     class Client
       API_URL = "https://app.hatchbox.io/api/v1"
 
-      def initialize(token: nil)
+      attr_reader :connection
+
+      def initialize(token: nil, connection: nil)
         @token = token || ENV["HATCHBOX_API_TOKEN"]
-        raise Error, "HATCHBOX_API_TOKEN not set" if @token.nil?
+        raise Error, "HATCHBOX_API_TOKEN not set" if @token.nil? && connection.nil?
+        @connection = connection || build_connection
       end
 
       def post(path, data = {})
@@ -27,12 +30,22 @@ module JumpstartDeploy
         raise Error, "HTTP request failed: #{e.message}"
       end
 
+      def create_application(name:, repository:, framework: "rails")
+        response = post("/apps", app: { name: name, repository: repository, framework: framework })
+        Application.new(response)
+      end
+
+      def configure_environment(app_id, env_vars)
+        post("/apps/#{app_id}/env_vars", env_vars: env_vars)
+        true
+      end
+
       private
 
-      def connection
-        @connection ||= Faraday.new(url: API_URL) do |f|
+      def build_connection
+        Faraday.new(url: API_URL) do |f|
           f.request :authorization, "Bearer", @token
-          f.request :retry, { max: 2, interval: 0.05 }
+          f.request :retry, max: 2, interval: 0.05
           f.request :json
           f.response :json
           f.adapter Faraday.default_adapter
@@ -41,7 +54,7 @@ module JumpstartDeploy
 
       def parse_response(response)
         return response.body if response.success?
-        
+
         error_message = response.body["error"] || response.body["message"] || "Request failed"
         raise Error, error_message
       end

@@ -14,8 +14,8 @@ Gem::Specification.new do |spec|
 
   spec.files = Dir["lib/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   spec.bindir = "exe"
-  spec.executables = ["jumpstart_deploy"]
-  spec.require_paths = ["lib"]
+  spec.executables = [ "jumpstart_deploy" ]
+  spec.require_paths = [ "lib" ]
 
   spec.required_ruby_version = ">= 2.7.0"
 

@@ -8,7 +8,7 @@ module JumpstartDeploy
 
       def initialize(client, app_id)
         @client = client
-        @app_id = app_id 
+        @app_id = app_id
         @status = nil
       end
 

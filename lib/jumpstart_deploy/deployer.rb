@@ -51,17 +51,17 @@ module JumpstartDeploy
     def clone_jumpstart
       spinner_run("Cloning Jumpstart Pro") do
         jumpstart_url = fetch_jumpstart_url
-        
+
         # Clone the repository
         ShellCommands.git("clone", jumpstart_url, tmp_path)
-        
+
         # Configure remote
         ShellCommands.git("remote", "remove", "origin", dir: tmp_path)
         ShellCommands.git(
-          "remote", 
-          "add", 
-          "origin", 
-          @repo.ssh_url, 
+          "remote",
+          "add",
+          "origin",
+          @repo.ssh_url,
           dir: tmp_path
         )
       end
@@ -74,7 +74,7 @@ module JumpstartDeploy
 
         # Install dependencies
         ShellCommands.bundle("install", dir: tmp_path)
-        
+
         # Set up database
         ShellCommands.rails("db:create", dir: tmp_path)
         ShellCommands.rails("db:migrate", dir: tmp_path)
@@ -205,11 +205,11 @@ module JumpstartDeploy
 
     def display_results
       puts "\n✨ Deployment completed successfully!"
-      
+
       puts "\nURLs:"
       puts "GitHub: #{@repo.html_url}"
       puts "Hatchbox: https://app.hatchbox.io/apps/#{@hatchbox_app["id"]}"
-      
+
       puts "\nNext steps:"
       puts "1. Set up your database credentials in Hatchbox"
       puts "2. Configure any additional environment variables"
