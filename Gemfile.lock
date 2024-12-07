@@ -2,6 +2,7 @@ PATH
   remote: .
   specs:
     jumpstart_deploy (0.1.0)
+    faraday (~> 2.7)
       faraday-retry (~> 2.2)
       octokit (~> 9.0)
       thor (~> 1.2)
