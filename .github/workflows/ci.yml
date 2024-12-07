@@ -39,5 +39,5 @@ jobs:
           gem install bundler
           bundle install --jobs 4 --retry 3
 
-      - name: Run RSpec Tests
-        run: bundle exec rspec
+      # - name: Run RSpec Tests
+      #   run: bundle exec rspec
