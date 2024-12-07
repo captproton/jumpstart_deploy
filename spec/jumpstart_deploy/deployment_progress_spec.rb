@@ -64,8 +64,9 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
       allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
       expect(spinner).to receive(:error)
       expect {
- progress.fail_step(:github_setup,
-StandardError.new("Test Error")) }.to output(/Error during creating github repository:/).to_stdout.and raise_error(SystemExit)
+        progress.fail_step(:github_setup, StandardError.new("Test Error"))
+      }.to output(/Error during creating github repository:/).to_stdout
+       .and raise_error(SystemExit)
       expect(progress.step_statuses[:github_setup]).to eq(:failed)
     end
 
