@@ -41,5 +41,3 @@ jobs:
 
       - name: Run RSpec Tests
         run: bundle exec rspec
-
-
