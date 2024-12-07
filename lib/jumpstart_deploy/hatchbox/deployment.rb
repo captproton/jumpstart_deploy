@@ -3,14 +3,12 @@
 module JumpstartDeploy
   module Hatchbox
     class Deployment
-      class DeploymentError < StandardError; end
-      
       STATUS_POLLING_INTERVAL = 10 # seconds
       MAX_POLL_ATTEMPTS = 30      # 5 minutes total
 
       def initialize(client, app_id)
         @client = client
-        @app_id = app_id
+        @app_id = app_id 
         @status = nil
       end
 
