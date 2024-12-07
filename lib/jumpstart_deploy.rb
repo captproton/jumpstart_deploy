@@ -21,3 +21,4 @@ require "jumpstart_deploy/hatchbox/deployment"   # Load before client
 require "jumpstart_deploy/hatchbox/client"
 require "jumpstart_deploy/cli"
 require "jumpstart_deploy/deployer"
+require "jumpstart_deploy/deployment_progress"
