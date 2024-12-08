@@ -7,6 +7,7 @@ module JumpstartDeploy
   module Hatchbox
     class Connection
       BASE_URL = "https://app.hatchbox.io/api/v1"
+      ALLOWED_METHODS = %i[get post put delete patch].freeze
 
       def initialize(token = nil)
         @token = token || fetch_token
@@ -14,7 +15,12 @@ module JumpstartDeploy
       end
 
       def request(method, path, params = {})
-        response = client.public_send(method, path, params)
+        method_sym = method.to_s.downcase.to_sym
+        unless ALLOWED_METHODS.include?(method_sym)
+          raise JumpstartDeploy::Error, "Invalid HTTP method: #{method}"
+        end
+
+        response = client.send(method_sym, path, params)
         parse_response(response)
       rescue Faraday::Error => e
         raise JumpstartDeploy::Error, "Network error: #{e.message}"
@@ -31,19 +37,20 @@ module JumpstartDeploy
       end
 
       def setup_client
-        @client = Faraday.new(url: BASE_URL) do |f|
-          f.request :json
-          f.response :json
-          f.headers["Authorization"] = "Bearer #{token}"
-          f.adapter Faraday.default_adapter
+        @client = Faraday.new(url: BASE_URL) do |faraday|
+          faraday.request :json
+          faraday.response :json, content_type: /\bjson$/
+          faraday.adapter Faraday.default_adapter
+          faraday.headers["Authorization"] = "Bearer #{token}"
         end
       end
 
       def parse_response(response)
-        return response.body if response.success?
-
-        error_message = response.body["error"] if response.body.is_a?(Hash)
-        raise JumpstartDeploy::Error, "API error: #{error_message || response.reason_phrase}"
+        if response.success?
+          response.body
+        else
+          raise JumpstartDeploy::Error, "API error: #{response.status} #{response.body}"
+        end
       end
     end
   end
