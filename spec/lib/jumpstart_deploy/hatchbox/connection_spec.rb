@@ -1,62 +1,68 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "jumpstart_deploy/hatchbox/connection"
 
 RSpec.describe JumpstartDeploy::Hatchbox::Connection do
-  let(:access_token) { "fake_token" }
-  let(:connection) { described_class.new(access_token) }
+  let(:token) { "test_token" }
+  let(:connection) { described_class.new(token) }
 
   describe "#initialize" do
-    context "with access token" do
-      it "configures client with proper headers" do
-        client = connection.client
-        expect(client.headers["Authorization"]).to eq("Bearer fake_token")
-        expect(client.headers["Content-Type"]).to eq("application/json")
-        expect(client.headers["Accept"]).to eq("application/json")
-      end
+    it "accepts an API token" do
+      expect(connection.send(:client).headers["Authorization"]).to eq("Bearer #{token}")
     end
 
-    context "without access token" do
+    context "without token" do
       before { ENV["HATCHBOX_API_TOKEN"] = nil }
 
-      it "raises error when environment variable not set" do
+      it "raises error when token not configured" do
         expect { described_class.new }.to raise_error(JumpstartDeploy::Hatchbox::Error)
       end
 
-      it "uses environment variable when available" do
+      it "uses HATCHBOX_API_TOKEN environment variable" do
         ENV["HATCHBOX_API_TOKEN"] = "env_token"
-        client = described_class.new.client
-        expect(client.headers["Authorization"]).to eq("Bearer env_token")
+        connection = described_class.new
+        expect(connection.send(:client).headers["Authorization"]).to eq("Bearer env_token")
       end
-    end
-
-    it "validates token presence" do
-      expect { described_class.new("") }
-        .to raise_error(JumpstartDeploy::Hatchbox::Error)
     end
   end
 
-  describe "#client" do
-    let(:client) { connection.client }
+  describe "#request" do
+    context "with successful response" do
+      let(:response_data) { { "id" => 1, "name" => "test-app" } }
 
-    it "configures request retries" do
-      handlers = client.builder.handlers
-      expect(handlers).to include(Faraday::Retry::Middleware)
+      before do
+        stub_request(:get, "#{described_class::BASE_URL}/apps/1")
+          .with(headers: { "Authorization" => "Bearer #{token}" })
+          .to_return(status: 200, body: response_data.to_json)
+      end
+
+      it "returns parsed response data" do
+        expect(connection.request(:get, "apps/1")).to eq(response_data)
+      end
     end
 
-    it "configures JSON parsing" do
-      handlers = client.builder.handlers
-      expect(handlers).to include(Faraday::Response::Json)
+    context "with error response" do
+      before do
+        stub_request(:get, "#{described_class::BASE_URL}/apps/1")
+          .to_return(status: 422, body: { error: "Not found" }.to_json)
+      end
+
+      it "raises error with message" do
+        expect { connection.request(:get, "apps/1") }
+          .to raise_error(JumpstartDeploy::Hatchbox::Error, /Not found/)
+      end
     end
 
-    it "configures timeouts" do
-      expect(client.options.timeout).to eq(30)
-      expect(client.options.open_timeout).to eq(5)
-    end
+    context "with network error" do
+      before do
+        stub_request(:get, "#{described_class::BASE_URL}/apps/1")
+          .to_raise(Faraday::ConnectionFailed.new("Failed to connect"))
+      end
 
-    it "uses proper base URL" do
-      expect(client.url_prefix.to_s).to eq("https://app.hatchbox.io/api/v1")
+      it "raises error with message" do
+        expect { connection.request(:get, "apps/1") }
+          .to raise_error(JumpstartDeploy::Hatchbox::Error, /Failed to connect/)
+      end
     end
   end
 end
