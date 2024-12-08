@@ -1,62 +1,49 @@
 # frozen_string_literal: true
 
 require "faraday"
-require "faraday/retry"
+require "json"
 
 module JumpstartDeploy
   module Hatchbox
     class Connection
-      API_URL = "https://app.hatchbox.io/api/v1"
+      BASE_URL = "https://app.hatchbox.io/api/v1"
 
-      def initialize(access_token = nil)
-        @access_token = access_token || fetch_access_token
-        validate_token!
+      def initialize(token = nil)
+        @token = token || fetch_token
+        setup_client
       end
 
-      def client
-        @client ||= Faraday.new(API_URL) do |f|
-          # Retry failed requests
-          f.request :retry, {
-            max: 2,
-            interval: 0.05,
-            interval_randomness: 0.5,
-            backoff_factor: 2,
-            exceptions: [
-              Faraday::ConnectionFailed,
-              Faraday::TimeoutError
-            ]
-          }
-
-          # Parse JSON responses
-          f.response :json
-
-          # Log requests in debug mode
-          f.response :logger if ENV["DEBUG"]
-
-          # Set timeouts
-          f.options.timeout = 30      # Total request timeout
-          f.options.open_timeout = 5  # Connection open timeout
-
-          # Authentication and headers
-          f.headers["Authorization"] = "Bearer #{@access_token}"
-          f.headers["Content-Type"] = "application/json"
-          f.headers["Accept"] = "application/json"
-
-          # Use Net::HTTP adapter
-          f.adapter :net_http
-        end
+      def request(method, path, params = {})
+        response = client.public_send(method, path, params)
+        parse_response(response)
+      rescue Faraday::Error => e
+        raise JumpstartDeploy::Error, "Network error: #{e.message}"
       end
 
       private
 
-      def fetch_access_token
+      attr_reader :token, :client
+
+      def fetch_token
         ENV.fetch("HATCHBOX_API_TOKEN") do
-          raise JumpstartDeploy::Hatchbox::Error, "HATCHBOX_API_TOKEN environment variable is not set"
+          raise JumpstartDeploy::Error, "HATCHBOX_API_TOKEN not configured"
         end
       end
 
-      def validate_token!
-        raise JumpstartDeploy::Hatchbox::Error, "Access token cannot be blank" if @access_token.to_s.strip.empty?
+      def setup_client
+        @client = Faraday.new(url: BASE_URL) do |f|
+          f.request :json
+          f.response :json
+          f.headers["Authorization"] = "Bearer #{token}"
+          f.adapter Faraday.default_adapter
+        end
+      end
+
+      def parse_response(response)
+        return response.body if response.success?
+
+        error_message = response.body["error"] if response.body.is_a?(Hash)
+        raise JumpstartDeploy::Error, "API error: #{error_message || response.reason_phrase}"
       end
     end
   end
