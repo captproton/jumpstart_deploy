@@ -20,7 +20,7 @@ module JumpstartDeploy
           raise JumpstartDeploy::Error, "Invalid HTTP method: #{method}"
         end
 
-        response = client.send(method_sym, path, params)
+        response = perform_request(method_sym, path, params)
         parse_response(response)
       rescue Faraday::Error => e
         raise JumpstartDeploy::Error, "Network error: #{e.message}"
@@ -42,6 +42,24 @@ module JumpstartDeploy
           faraday.response :json, content_type: /\bjson$/
           faraday.adapter Faraday.default_adapter
           faraday.headers["Authorization"] = "Bearer #{token}"
+        end
+      end
+
+      def perform_request(method_sym, path, params)
+        case method_sym
+        when :get
+          client.get(path, params)
+        when :post
+          client.post(path, params)
+        when :put
+          client.put(path, params)
+        when :delete
+          client.delete(path, params)
+        when :patch
+          client.patch(path, params)
+        else
+          # This should not occur due to prior validation
+          raise JumpstartDeploy::Error, "Unsupported HTTP method: #{method_sym}"
         end
       end
 
