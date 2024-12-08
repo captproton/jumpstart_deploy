@@ -9,7 +9,7 @@ module JumpstartDeploy
 
       def initialize(attributes)
         @id = attributes.fetch("id")
-        @name = attributes.fetch("name") 
+        @name = attributes.fetch("name")
         @status = attributes.fetch("status", "pending")
       end
 
