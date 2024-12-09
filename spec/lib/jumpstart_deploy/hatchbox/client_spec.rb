@@ -6,7 +6,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
   let(:connection) { instance_double(JumpstartDeploy::Hatchbox::Connection) }
   let(:progress) { instance_double(JumpstartDeploy::DeploymentProgress) }
   let(:client) { described_class.new(connection: connection, progress: progress) }
-  
+
   let(:app_params) do
     {
       name: "test-app",
@@ -25,12 +25,12 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
 
   describe "#create_application" do
     let(:app_response) { { "id" => 123, "name" => "test-app" } }
-    
+
     before do
       allow(connection).to receive(:post)
         .with("/apps", app: app_params)
         .and_return(app_response)
-      
+
       allow(progress).to receive(:start_step)
       allow(progress).to receive(:complete_step)
     end
@@ -38,7 +38,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
     it "creates application with proper config" do
       expect(connection).to receive(:post)
         .with("/apps", app: app_params)
-      
+
       client.create_application(app_params)
     end
 
@@ -51,7 +51,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
     it "tracks progress" do
       expect(progress).to receive(:start_step).with(:hatchbox_setup)
       expect(progress).to receive(:complete_step).with(:hatchbox_setup)
-      
+
       client.create_application(app_params)
     end
 
@@ -71,7 +71,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
       it "reports progress failure" do
         expect(progress).to receive(:fail_step)
           .with(:hatchbox_setup, instance_of(JumpstartDeploy::Hatchbox::Error))
-        
+
         begin
           client.create_application(app_params)
         rescue JumpstartDeploy::Hatchbox::Error
@@ -83,7 +83,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
 
   describe "#configure_environment" do
     let(:app_id) { 123 }
-    
+
     before do
       allow(connection).to receive(:post)
         .with("/apps/#{app_id}/env_vars", env_vars: env_vars)
@@ -93,7 +93,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
     it "configures environment variables" do
       expect(connection).to receive(:post)
         .with("/apps/#{app_id}/env_vars", env_vars: env_vars)
-      
+
       client.configure_environment(app_id, env_vars)
     end
 
@@ -105,7 +105,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
 
       it "handles configuration errors" do
         expect {
-          client.configure_environment(app_id, env_vars)  
+          client.configure_environment(app_id, env_vars)
         }.to raise_error(JumpstartDeploy::Hatchbox::Error)
       end
     end
@@ -113,27 +113,27 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
 
   describe "#deploy" do
     let(:app_id) { 123 }
-    
+
     before do
       allow(connection).to receive(:post)
         .with("/apps/#{app_id}/deploys")
         .and_return({ "id" => 456, "status" => "pending" })
-      
+
       allow(progress).to receive(:start_step)
-      allow(progress).to receive(:complete_step) 
+      allow(progress).to receive(:complete_step)
     end
 
     it "triggers deployment" do
       expect(connection).to receive(:post)
         .with("/apps/#{app_id}/deploys")
-      
+
       client.deploy(app_id)
     end
 
     it "tracks deployment progress" do
       expect(progress).to receive(:start_step).with(:deploy)
       expect(progress).to receive(:complete_step).with(:deploy)
-      
+
       client.deploy(app_id)
     end
 
@@ -153,7 +153,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
       it "reports progress failure" do
         expect(progress).to receive(:fail_step)
           .with(:deploy, instance_of(JumpstartDeploy::Hatchbox::Error))
-        
+
         begin
           client.deploy(app_id)
         rescue JumpstartDeploy::Hatchbox::Error
@@ -166,7 +166,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
   describe "#deployment_status" do
     let(:app_id) { 123 }
     let(:deploy_id) { 456 }
-    
+
     before do
       allow(connection).to receive(:get)
         .with("/apps/#{app_id}/deploys/#{deploy_id}")
@@ -180,7 +180,7 @@ RSpec.describe JumpstartDeploy::Hatchbox::Client do
     it "fetches deployment status" do
       expect(connection).to receive(:get)
         .with("/apps/#{app_id}/deploys/#{deploy_id}")
-      
+
       client.deployment_status(app_id, deploy_id)
     end
 

@@ -1,4 +1,3 @@
-# lib/jumpstart_deploy/hatchbox/client.rb
 # frozen_string_literal: true
 
 module JumpstartDeploy
