@@ -3,61 +3,43 @@
 module JumpstartDeploy
   module Hatchbox
     class Client
-      API_URL = "https://app.hatchbox.io/api/v1"
-
-      attr_reader :connection
-
-      def initialize(token: nil, connection: nil)
-        @token = token || ENV["HATCHBOX_API_TOKEN"]
-        raise ClientError, "HATCHBOX_API_TOKEN not set" if @token.nil? && connection.nil?
-        @connection = connection || build_connection
+      def initialize(connection:, progress:)
+        @connection = connection
+        @progress = progress
       end
 
-      def post(path, data = {})
-        response = connection.post(path) do |req|
-          req.headers["Content-Type"] = "application/json"
-          req.body = data.to_json
-        end
-        parse_response(response)
-      rescue Faraday::Error => e
-        raise ClientError, "HTTP request failed: #{e.message}"
-      end
-
-      def get(path)
-        response = connection.get(path)
-        parse_response(response)
-      rescue Faraday::Error => e
-        raise ClientError, "HTTP request failed: #{e.message}"
-      end
-
-      def create_application(name:, repository:, framework: "rails")
-        response = post("/apps", app: { name: name, repository: repository, framework: framework })
-        Application.new(response)
+      def create_application(params)
+        @progress.start_step(:hatchbox_setup)
+        response = @connection.post("/apps", app: params)
+        application = Application.new(response)
+        @progress.complete_step(:hatchbox_setup)
+        application
+      rescue Error => e
+        @progress.fail_step(:hatchbox_setup, e)
+        raise
       end
 
       def configure_environment(app_id, env_vars)
-        post("/apps/#{app_id}/env_vars", env_vars: env_vars)
-        true
+        @connection.post("/apps/#{app_id}/env_vars", env_vars: env_vars)
+      end
+
+      def deploy(app_id)
+        @progress.start_step(:deploy)
+        response = @connection.post("/apps/#{app_id}/deploys")
+        @progress.complete_step(:deploy)
+        response
+      rescue Error => e
+        @progress.fail_step(:deploy, e)
+        raise
+      end
+
+      def deployment_status(app_id, deploy_id)
+        @connection.get("/apps/#{app_id}/deploys/#{deploy_id}")
       end
 
       private
 
-      def build_connection
-        Faraday.new(url: API_URL) do |f|
-          f.request :authorization, "Bearer", @token
-          f.request :retry, max: 2, interval: 0.05
-          f.request :json
-          f.response :json
-          f.adapter Faraday.default_adapter
-        end
-      end
-
-      def parse_response(response)
-        return response.body if response.success?
-
-        error_message = response.body["error"] || response.body["message"] || "Request failed"
-        raise ClientError, error_message
-      end
+      attr_reader :connection, :progress
     end
   end
 end
