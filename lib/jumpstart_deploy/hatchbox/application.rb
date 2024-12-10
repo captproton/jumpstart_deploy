@@ -2,15 +2,15 @@
 
 module JumpstartDeploy
   module Hatchbox
-    # Domain object representing a Hatchbox application
-    # Maps raw API responses to a clean Ruby interface
     class Application
-      attr_reader :id, :name, :status
+      attr_reader :id, :name, :repository, :framework, :status
 
-      def initialize(attributes)
-        @id = attributes.fetch("id")
-        @name = attributes.fetch("name")
-        @status = attributes.fetch("status", "pending")
+      def initialize(attributes = {})
+        @id = attributes["id"]
+        @name = attributes["name"]
+        @repository = attributes["repository"]
+        @framework = attributes["framework"]
+        @status = attributes["status"]
       end
 
       def deployed?

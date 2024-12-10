@@ -2,10 +2,17 @@
 
 # Core dependencies
 require "tty-command"
-require "tty-prompt"
+require "tty-prompt" 
 require "tty-spinner"
 require "octokit"
 require "faraday"
+require "json"
+
+# Define base error first
+module JumpstartDeploy
+  class Error < StandardError; end
+  class CommandError < Error; end
+end
 
 # Base functionality
 require "jumpstart_deploy/version"
@@ -27,8 +34,3 @@ require "jumpstart_deploy/cli"
 
 # Rails integration (conditional)
 require "jumpstart_deploy/engine" if defined?(Rails)
-
-module JumpstartDeploy
-  class Error < StandardError; end
-  class CommandError < Error; end
-end
