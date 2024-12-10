@@ -2,7 +2,7 @@
 
 # Core dependencies
 require "tty-command"
-require "tty-prompt" 
+require "tty-prompt"
 require "tty-spinner"
 require "octokit"
 require "faraday"

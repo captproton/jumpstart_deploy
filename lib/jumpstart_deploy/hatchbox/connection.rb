@@ -41,7 +41,7 @@ module JumpstartDeploy
       def request(method, path, params = {})
         method_sym = method.to_s.downcase.to_sym
         validate_method!(method_sym)
-        
+
         response = perform_request(method_sym, path, params)
         parse_response(response)
       rescue Faraday::Error => e
