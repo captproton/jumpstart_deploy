@@ -15,6 +15,7 @@ RSpec.describe JumpstartDeploy::Deployer do
   before do
     allow(Octokit::Client).to receive(:new).and_return(github_client)
     allow(github_client).to receive(:create_repository).and_return(repo_response)
+    allow(github_client).to receive(:add_team_repository)
 
     # Stub shell commands
     allow(JumpstartDeploy::ShellCommands).to receive(:git)
@@ -37,10 +38,8 @@ RSpec.describe JumpstartDeploy::Deployer do
     context "with valid options" do
       it "executes deployment steps in order" do
         expect(deployer).to receive(:create_github_repo).ordered
-        expect(deployer).to receive(:clone_jumpstart).ordered
-        expect(deployer).to receive(:configure_jumpstart).ordered
+        expect(deployer).to receive(:setup_template).ordered
         expect(deployer).to receive(:setup_hatchbox).ordered
-        expect(deployer).to receive(:display_results).ordered
 
         deployer.deploy(options)
       end
@@ -65,6 +64,12 @@ RSpec.describe JumpstartDeploy::Deployer do
     end
 
     context "with Hatchbox API errors" do
+      before do
+        # Allow GitHub operations to succeed
+        allow(github_client).to receive(:create_repository).and_return(repo_response)
+        allow(github_client).to receive(:add_team_repository)
+      end
+
       it "handles API failures gracefully" do
         allow(HTTP).to receive(:post)
           .and_raise(HTTP::Error.new("API Error"))
@@ -85,7 +90,7 @@ RSpec.describe JumpstartDeploy::Deployer do
         )
       )
 
-      deployer.send(:create_github_repo)
+      deployer.send(:create_github_repo, { "name" => "test-app" })
     end
 
     context "with team access" do
@@ -106,41 +111,38 @@ RSpec.describe JumpstartDeploy::Deployer do
   end
 
   describe "#setup_hatchbox" do
-    let(:hatchbox_response) { double(status: double(success?: true), body: { id: 123 }.to_json) }
+    let(:hatchbox_response) { { id: 123 }.to_json }
 
     before do
       allow(HTTP).to receive(:auth).and_return(HTTP)
-      allow(HTTP).to receive(:post).and_return(hatchbox_response)
+      # Set up the repository
+      deployer.instance_variable_set(:@repository, repo_response)
     end
 
-    it "configures application with correct parameters" do
-      expect(HTTP).to receive(:post).with(
-        "https://app.hatchbox.io/api/v1/apps",
-        json: {
-          app: {
-            name: "test-app",
-            repository: repo_response.full_name,
-            framework: "rails"
-          }
-        }
-      )
+    it "creates application with correct parameters" do
+      # First request - create application
+      expect(HTTP).to receive(:post) do |url, params|
+        expect(url).to eq("https://app.hatchbox.io/api/v1/apps")
+        expect(params[:json][:app]).to include(
+          name: "test-app",
+          repository: repo_response.full_name,
+          framework: "rails"
+        )
+        double(status: double(success?: true), body: hatchbox_response)
+      end
 
-      deployer.send(:setup_hatchbox)
-    end
+      # Second request - set environment variables
+      expect(HTTP).to receive(:post) do |url, params|
+        expect(url).to eq("https://app.hatchbox.io/api/v1/123/env_vars")
+        expect(params[:json][:env_vars]).to include(
+          "RAILS_ENV" => "production",
+          "RAILS_LOG_TO_STDOUT" => "true",
+          "RAILS_SERVE_STATIC_FILES" => "true"
+        )
+        double(status: double(success?: true), body: "{}")
+      end
 
-    it "sets up required environment variables" do
-      expect(HTTP).to receive(:post).with(
-        %r{/env_vars$},
-        json: {
-          env_vars: hash_including(
-            "RAILS_ENV" => "production",
-            "RAILS_LOG_TO_STDOUT" => "true",
-            "RAILS_SERVE_STATIC_FILES" => "true"
-          )
-        }
-      )
-
-      deployer.send(:setup_hatchbox)
+      deployer.send(:setup_hatchbox, { "name" => "test-app" })
     end
   end
 end

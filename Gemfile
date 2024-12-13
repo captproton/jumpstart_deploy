@@ -28,6 +28,8 @@ group :development, :test do
   # API clients
   gem "octokit", "~> 9.2"
   gem "http", "~> 5.2"
+  gem "faraday", "~> 2.7"
+  gem "faraday-retry"
   gem "rspec-rails", "~> 7.1"
   gem "factory_bot_rails", "~> 6.4"
   gem "webmock", "~> 3.24"
