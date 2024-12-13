@@ -1,4 +1,7 @@
+# frozen_string_literal: true
+
 require "jumpstart_deploy/version"
+require "jumpstart_deploy/deployment_progress"
 require "jumpstart_deploy/cli"
 require "jumpstart_deploy/shell_commands"
 require "jumpstart_deploy/github/client"

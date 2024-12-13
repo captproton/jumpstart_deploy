@@ -7,21 +7,25 @@ module JumpstartDeploy
     def initialize
       @github_client = GitHub::Client.new
       @hatchbox_client = Hatchbox::Client.new
+      @progress = DeploymentProgress.new
       @repository = nil
     end
 
     def deploy(options)
       validate_options!(options)
       
+      @progress.start(:github_setup)
       create_github_repo(options)
+      @progress.success(:github_setup)
+      
+      @progress.start(:app_setup)
       setup_template(options)
       setup_hatchbox(options)
-    rescue Octokit::Conflict => e
-      raise CommandError, "Repository already exists: #{e.message}"
-    rescue Octokit::Error => e
-      raise CommandError, "GitHub error: #{e.message}"
-    rescue HTTP::Error => e
-      raise CommandError, "Hatchbox configuration failed: #{e.message}"
+      @progress.success(:app_setup)
+
+    rescue StandardError => e
+      handle_error(e)
+      raise
     end
 
     private
@@ -39,6 +43,9 @@ module JumpstartDeploy
 
       @github_client.add_team_to_repository(options["team"], @repository.full_name) if options["team"]
       @repository
+    rescue StandardError => e
+      @progress.error(:github_setup, e)
+      raise
     end
 
     def setup_template(options)
@@ -50,17 +57,28 @@ module JumpstartDeploy
     end
 
     def setup_hatchbox(options = {})
-      # First create the application
       response = @hatchbox_client.create_application(
         name: options["name"],
         repository: @repository&.full_name,
         framework: "rails"
       )
 
-      # Then set up environment variables
+      return unless response && response["id"]
+
       @hatchbox_client.post("#{response['id']}/env_vars", json: {
         env_vars: default_env_vars
       })
+    end
+
+    def handle_error(error)
+      case error
+      when Octokit::Conflict
+        raise CommandError, "Repository already exists: #{error.message}"
+      when Octokit::Error
+        raise CommandError, "GitHub error: #{error.message}"
+      when HTTP::Error
+        raise CommandError, "Hatchbox configuration failed: #{error.message}"
+      end
     end
 
     def default_env_vars

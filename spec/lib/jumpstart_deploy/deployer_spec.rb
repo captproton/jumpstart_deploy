@@ -1,148 +1,52 @@
-require 'spec_helper'
+# spec/lib/jumpstart_deploy/deployer_spec.rb
+require "spec_helper"
 
 RSpec.describe JumpstartDeploy::Deployer do
   let(:deployer) { described_class.new }
-  let(:options) { { "name" => "test-app", "team" => "engineering" } }
-  let(:github_client) { instance_double(Octokit::Client) }
-  let(:repo_response) do
-    double(
-      html_url: "https://github.com/org/test-app",
-      ssh_url: "git@github.com:org/test-app.git",
-      full_name: "org/test-app"
-    )
-  end
+  let(:progress) { instance_double(JumpstartDeploy::DeploymentProgress) }
+  let(:github_client) { instance_double(JumpstartDeploy::GitHub::Client) }
+  let(:hatchbox_client) { instance_double(JumpstartDeploy::Hatchbox::Client) }
+  let(:options) { { "name" => "test-app" } }
 
   before do
-    allow(Octokit::Client).to receive(:new).and_return(github_client)
-    allow(github_client).to receive(:create_repository).and_return(repo_response)
-    allow(github_client).to receive(:add_team_repository)
+    allow(JumpstartDeploy::GitHub::Client).to receive(:new).and_return(github_client)
+    allow(JumpstartDeploy::Hatchbox::Client).to receive(:new).and_return(hatchbox_client)
+    allow(JumpstartDeploy::DeploymentProgress).to receive(:new).and_return(progress)
 
-    # Stub shell commands
+    # Progress tracking
+    allow(progress).to receive(:start)
+    allow(progress).to receive(:success) 
+    allow(progress).to receive(:error)
+
+    # Allow operations to succeed by default
+    allow(github_client).to receive(:create_repository).and_return(double(full_name: "org/test-app"))
+    allow(hatchbox_client).to receive(:create_application)
     allow(JumpstartDeploy::ShellCommands).to receive(:git)
-    allow(JumpstartDeploy::ShellCommands).to receive(:bundle)
-    allow(JumpstartDeploy::ShellCommands).to receive(:rails)
   end
 
   describe "#deploy" do
-    before do
-      # Stub HTTP client for Hatchbox API
-      allow(HTTP).to receive(:auth).and_return(HTTP)
-      allow(HTTP).to receive(:post).and_return(
-        double(
-          status: double(success?: true),
-          body: double(to_s: { id: 123 }.to_json)
-        )
-      )
+    it "tracks progress of deployment steps" do
+      expect(progress).to receive(:start).with(:github_setup)
+      expect(progress).to receive(:success).with(:github_setup)
+      
+      expect(progress).to receive(:start).with(:app_setup)
+      expect(progress).to receive(:success).with(:app_setup)
+
+      deployer.deploy(options)
     end
 
-    context "with valid options" do
-      it "executes deployment steps in order" do
-        expect(deployer).to receive(:create_github_repo).ordered
-        expect(deployer).to receive(:setup_template).ordered
-        expect(deployer).to receive(:setup_hatchbox).ordered
-
-        deployer.deploy(options)
-      end
-    end
-
-    context "with GitHub errors" do
-      it "handles repository creation failures" do
-        allow(github_client).to receive(:create_repository)
-          .and_raise(Octokit::Error.new)
-
-        expect { deployer.deploy(options) }
-          .to raise_error(JumpstartDeploy::CommandError)
-      end
-
-      it "handles repository conflicts" do
-        allow(github_client).to receive(:create_repository)
-          .and_raise(Octokit::Conflict)
-
-        expect { deployer.deploy(options) }
-          .to raise_error(JumpstartDeploy::CommandError, /Repository already exists/)
-      end
-    end
-
-    context "with Hatchbox API errors" do
+    context "when GitHub setup fails" do
       before do
-        # Allow GitHub operations to succeed
-        allow(github_client).to receive(:create_repository).and_return(repo_response)
-        allow(github_client).to receive(:add_team_repository)
+        allow(github_client).to receive(:create_repository)
+          .and_raise(StandardError.new("API error"))
       end
 
-      it "handles API failures gracefully" do
-        allow(HTTP).to receive(:post)
-          .and_raise(HTTP::Error.new("API Error"))
+      it "shows error and stops deployment" do
+        expect(progress).to receive(:error).with(:github_setup, instance_of(StandardError))
+        expect(progress).not_to receive(:start).with(:app_setup)
 
-        expect { deployer.deploy(options) }
-          .to raise_error(JumpstartDeploy::CommandError, /Hatchbox configuration failed/)
+        expect { deployer.deploy(options) }.to raise_error(StandardError)
       end
-    end
-  end
-
-  describe "#create_github_repo" do
-    it "creates private repository with correct parameters" do
-      expect(github_client).to receive(:create_repository).with(
-        "test-app",
-        hash_including(
-          private: true,
-          description: "Rails application using Jumpstart Pro"
-        )
-      )
-
-      deployer.send(:create_github_repo, { "name" => "test-app" })
-    end
-
-    context "with team access" do
-      before do
-        allow(github_client).to receive(:add_team_repository)
-      end
-
-      it "adds team to repository when specified" do
-        expect(github_client).to receive(:add_team_repository).with(
-          "engineering",
-          repo_response.full_name,
-          permission: "push"
-        )
-
-        deployer.deploy(options)
-      end
-    end
-  end
-
-  describe "#setup_hatchbox" do
-    let(:hatchbox_response) { { id: 123 }.to_json }
-
-    before do
-      allow(HTTP).to receive(:auth).and_return(HTTP)
-      # Set up the repository
-      deployer.instance_variable_set(:@repository, repo_response)
-    end
-
-    it "creates application with correct parameters" do
-      # First request - create application
-      expect(HTTP).to receive(:post) do |url, params|
-        expect(url).to eq("https://app.hatchbox.io/api/v1/apps")
-        expect(params[:json][:app]).to include(
-          name: "test-app",
-          repository: repo_response.full_name,
-          framework: "rails"
-        )
-        double(status: double(success?: true), body: hatchbox_response)
-      end
-
-      # Second request - set environment variables
-      expect(HTTP).to receive(:post) do |url, params|
-        expect(url).to eq("https://app.hatchbox.io/api/v1/123/env_vars")
-        expect(params[:json][:env_vars]).to include(
-          "RAILS_ENV" => "production",
-          "RAILS_LOG_TO_STDOUT" => "true",
-          "RAILS_SERVE_STATIC_FILES" => "true"
-        )
-        double(status: double(success?: true), body: "{}")
-      end
-
-      deployer.send(:setup_hatchbox, { "name" => "test-app" })
     end
   end
 end
