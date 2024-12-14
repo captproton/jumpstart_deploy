@@ -5,11 +5,12 @@ module JumpstartDeploy
     class Repository
       attr_reader :name, :full_name, :html_url, :ssh_url
 
-      def initialize(attributes)
+      def initialize(attributes = {})
+        attributes = attributes.transform_keys(&:to_sym)
         @name = attributes.fetch(:name)
         @full_name = attributes.fetch(:full_name)
         @html_url = attributes.fetch(:html_url)
-        @ssh_url = attributes.fetch(:ssh_url)
+        @ssh_url = attributes.fetch(:ssh_url) { attributes[:clone_url] }
       end
 
       def clone_url

@@ -1,47 +1,8 @@
-<<<<<<< HEAD
-=======
-# lib/jumpstart_deploy/deployment_progress.rb
->>>>>>> 19c95f3624e2ee776253c19602f4f0d8b3df7eea
 # frozen_string_literal: true
 
 require "tty-spinner"
 
 module JumpstartDeploy
-<<<<<<< HEAD
-  class DeploymentProgress
-    STEPS = {
-      github_setup: "Creating GitHub repository",
-      app_setup: "Configuring application"
-    }.freeze
-
-    def initialize
-      @spinners = {}
-      @step_statuses = {}
-    end
-
-    def start(step)
-      validate_step!(step)
-      return if @spinners[step]
-
-      @spinners[step] = TTY::Spinner.new("[:spinner] #{STEPS[step]}")
-      @spinners[step].auto_spin
-    end
-
-    def success(step)
-      validate_step!(step)
-      ensure_started(step)
-      @step_statuses[step] = :complete
-      @spinners[step].success
-    end
-
-    def error(step, error)
-      validate_step!(step)
-      ensure_started(step)
-      @step_statuses[step] = :failed
-      @spinners[step].error
-      puts "\nError during #{STEPS[step].downcase}:"
-      puts error.message
-=======
   # Handles deployment progress feedback and status tracking
   # Follows Single Responsibility Principle - only manages progress display
   class DeploymentProgress
@@ -89,13 +50,10 @@ module JumpstartDeploy
         status_icon = status == :complete ? "✓" : "✗"
         puts "#{status_icon} #{STEPS[step]}"
       end
->>>>>>> 19c95f3624e2ee776253c19602f4f0d8b3df7eea
     end
 
     private
 
-<<<<<<< HEAD
-=======
     def setup_spinners
       STEPS.each do |step, message|
         @spinners.register(:"#{step}") do |spinner|
@@ -104,23 +62,15 @@ module JumpstartDeploy
       end
     end
 
->>>>>>> 19c95f3624e2ee776253c19602f4f0d8b3df7eea
     def validate_step!(step)
       raise ArgumentError, "Invalid step: #{step}" unless STEPS.key?(step)
     end
 
-<<<<<<< HEAD
-    def ensure_started(step)
-      start(step) unless @spinners[step]
-    end
-  end
-end
-=======
     def handle_failure(step, error)
       puts "\nError during #{STEPS[step].downcase}:"
       puts error.message
       puts "\nTroubleshooting steps:"
-
+      
       case step
       when :github_setup
         puts "- Verify your GitHub access token is valid"
@@ -143,10 +93,6 @@ end
         puts "- Verify environment variables"
         puts "- Review application settings"
       end
-
-      summary
-      exit(1)
     end
   end
 end
->>>>>>> 19c95f3624e2ee776253c19602f4f0d8b3df7eea

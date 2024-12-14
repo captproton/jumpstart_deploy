@@ -27,10 +27,8 @@ module JumpstartDeploy
       end
 
       def validate_credentials!
-        raise Error, "GitHub access token required" if @access_token.nil?
+        raise ValidationError, "GitHub access token required" if @access_token.nil?
       end
     end
-
-    class Error < StandardError; end
   end
 end
