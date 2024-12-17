@@ -19,6 +19,7 @@ require "jumpstart_deploy/version"
 require "jumpstart_deploy/shell_commands"
 
 # Errors (must be loaded before components that use them)
+require "jumpstart_deploy/github/errors"
 require "jumpstart_deploy/hatchbox/errors"
 
 # Hatchbox components (order matters for dependencies)

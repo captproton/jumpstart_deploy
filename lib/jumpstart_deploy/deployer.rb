@@ -6,7 +6,7 @@ module JumpstartDeploy
 
     def initialize
       @github_client = GitHub::Client.new
-      @hatchbox_client = Hatchbox::Client.new
+      @hatchbox_client = Hatchbox::Client.new 
       @progress = DeploymentProgress.new
       @repository = nil
     end
@@ -14,17 +14,13 @@ module JumpstartDeploy
     def deploy(options)
       validate_options!(options)
       
-      @progress.start(:github_setup)
-      create_github_repo(options)
-      @progress.success(:github_setup)
-      
-      @progress.start(:app_setup)
-      setup_template(options)
-      setup_hatchbox(options)
-      @progress.success(:app_setup)
+      setup_github(options)
+      setup_application(options)
+      trigger_deployment(options)
 
+      @progress.summary
     rescue StandardError => e
-      handle_error(e)
+      @progress.summary
       raise
     end
 
@@ -34,7 +30,8 @@ module JumpstartDeploy
       raise Error, "Name is required" unless options["name"]
     end
 
-    def create_github_repo(options = {})
+    def setup_github(options)
+      @progress.start_step(:github_setup)
       @repository = @github_client.create_repository(
         name: options.fetch("name"),
         private: true,
@@ -42,49 +39,79 @@ module JumpstartDeploy
       )
 
       @github_client.add_team_to_repository(options["team"], @repository.full_name) if options["team"]
-      @repository
+      @progress.complete_step(:github_setup)
     rescue StandardError => e
-      @progress.error(:github_setup, e)
+      @progress.fail_step(:github_setup, e)
       raise
     end
 
-    def setup_template(options)
+    def setup_application(options)
+      clone_template(options)
+      configure_template(options)
+      setup_hatchbox(options)
+    end
+
+    def clone_template(options)
+      @progress.start_step(:clone_template)
       ShellCommands.git(
         "clone",
         ENV.fetch("JUMPSTART_REPO_URL"),
         options["name"]
       )
+      @progress.complete_step(:clone_template)
+    rescue StandardError => e
+      @progress.fail_step(:clone_template, e)
+      raise
     end
 
-    def setup_hatchbox(options = {})
+    def configure_template(options)
+      @progress.start_step(:configure_app)
+      Dir.chdir(options["name"]) do
+        ShellCommands.bundle("install")
+        ShellCommands.rails("db:create", "db:migrate")
+      end
+      @progress.complete_step(:configure_app)
+    rescue StandardError => e
+      @progress.fail_step(:configure_app, e)
+      raise
+    end
+
+    def setup_hatchbox(options)
+      @progress.start_step(:hatchbox_setup)
       response = @hatchbox_client.create_application(
         name: options["name"],
         repository: @repository&.full_name,
         framework: "rails"
       )
 
-      return unless response && response["id"]
-
-      @hatchbox_client.post("#{response['id']}/env_vars", json: {
-        env_vars: default_env_vars
-      })
+      if response && response["id"]
+        @hatchbox_client.configure_environment(
+          response["id"], 
+          env_vars: default_env_vars
+        )
+      end
+      @progress.complete_step(:hatchbox_setup)
+    rescue StandardError => e
+      @progress.fail_step(:hatchbox_setup, e)
+      raise
     end
 
-    def handle_error(error)
-      case error
-      when Octokit::Conflict
-        raise CommandError, "Repository already exists: #{error.message}"
-      when Octokit::Error
-        raise CommandError, "GitHub error: #{error.message}"
-      when HTTP::Error
-        raise CommandError, "Hatchbox configuration failed: #{error.message}"
-      end
+    def trigger_deployment(options)
+      @progress.start_step(:deploy)
+      @hatchbox_client.deploy(
+        name: options["name"],
+        branch: options.fetch("branch", "main")
+      )
+      @progress.complete_step(:deploy)
+    rescue StandardError => e
+      @progress.fail_step(:deploy, e)
+      raise
     end
 
     def default_env_vars
       {
         "RAILS_ENV" => "production",
-        "RAILS_LOG_TO_STDOUT" => "true",
+        "RAILS_LOG_TO_STDOUT" => "true", 
         "RAILS_SERVE_STATIC_FILES" => "true"
       }
     end

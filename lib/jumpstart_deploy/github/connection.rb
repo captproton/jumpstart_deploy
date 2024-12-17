@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "octokit"
+require_relative "errors"
 
 module JumpstartDeploy
   module GitHub
@@ -27,7 +28,7 @@ module JumpstartDeploy
       end
 
       def validate_credentials!
-        raise ValidationError, "GitHub access token required" if @access_token.nil?
+        raise Error, "GitHub access token required" if @access_token.nil?
       end
     end
   end

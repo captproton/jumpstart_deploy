@@ -1,39 +1,67 @@
 # frozen_string_literal: true
 
 require "spec_helper"
-require "tty-spinner"
-require "jumpstart_deploy/deployment_progress"  # Ensure the class is required
 
 RSpec.describe JumpstartDeploy::DeploymentProgress do
-  let(:progress) { described_class.new }
-  let(:spinner_multi) { double("TTY::Spinner::Multi") }  # Changed to a regular double
-  let(:spinner) { double("TTY::Spinner") }
-  let(:steps) { described_class::STEPS }
+  let(:spinner_multi) { instance_double(TTY::Spinner::Multi) }
+  let(:registered_spinners) { {} }
 
   before do
     allow(TTY::Spinner::Multi).to receive(:new).and_return(spinner_multi)
-    allow(spinner_multi).to receive(:register).and_yield(spinner)  # Yield the spinner when registering
-    allow(spinner_multi).to receive(:[]).and_return(spinner)        # Mock the [] method
-    allow(spinner).to receive(:update)
-    allow(spinner).to receive(:auto_spin)
-    allow(spinner).to receive(:success)
-    allow(spinner).to receive(:error)
+
+    # Setup registered spinners lookup
+    described_class::STEPS.each do |step, message|
+      spinner = instance_double(TTY::Spinner)
+      allow(spinner).to receive(:auto_spin)
+      allow(spinner).to receive(:success)
+      allow(spinner).to receive(:error)
+      allow(spinner).to receive(:update)
+
+      registered_spinners[step] = spinner
+
+      # Setup spinner registration - allow both formats for testing
+      allow(spinner_multi).to receive(:register)
+        .with(step)
+        .and_return(spinner)
+    end
+  end
+
+  describe "#interrupt_step" do
+    let(:progress) { described_class.new }
+
+    it "handles step interruption" do
+      expect(registered_spinners[:github_setup]).to receive(:error).with("Interrupted")
+      
+      expect {
+        progress.interrupt_step(:github_setup, "User cancelled deployment")
+      }.to output(/Deployment interrupted: User cancelled deployment/).to_stdout
+        .and change { progress.step_statuses[:github_setup] }.to(:interrupted)
+    end
+
+    it "validates step existence" do
+      expect {
+        progress.interrupt_step(:invalid_step, "test")
+      }.to raise_error(ArgumentError, "Invalid step: invalid_step")
+    end
   end
 
   describe "#initialize" do
     it "sets up spinners for all deployment steps" do
-      steps.each do |step, message|
-        expect(spinner_multi).to receive(:register).with(:"#{step}").and_yield(spinner)
-        expect(spinner).to receive(:update).with(title: message)
+      # First allow update for all spinners
+      described_class::STEPS.each do |step, message|
+        expect(registered_spinners[step]).to receive(:update).with(title: message)
       end
-      progress
+
+      # Then create new progress instance
+      described_class.new
     end
   end
 
   describe "#start_step" do
+    let(:progress) { described_class.new }
+
     it "starts spinner for valid step" do
-      expect(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      expect(spinner).to receive(:auto_spin)
+      expect(registered_spinners[:github_setup]).to receive(:auto_spin)
       progress.start_step(:github_setup)
     end
 
@@ -45,95 +73,92 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
   end
 
   describe "#complete_step" do
+    let(:progress) { described_class.new }
+
     it "marks step as complete" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      expect(spinner).to receive(:success)
+      progress.start_step(:github_setup)
+      expect(registered_spinners[:github_setup]).to receive(:success)
       progress.complete_step(:github_setup)
-      expect(progress.step_statuses[:github_setup]).to eq(:complete)
     end
 
     it "updates step status" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      progress.complete_step(:github_setup)
-      expect(progress.step_statuses[:github_setup]).to eq(:complete)
+      progress.start_step(:github_setup)
+      expect {
+        progress.complete_step(:github_setup)
+      }.to change { progress.step_statuses[:github_setup] }.to(:complete)
     end
   end
 
   describe "#fail_step" do
+    let(:error) { StandardError.new("Test error") }
+    let(:progress) { described_class.new }
+
     it "marks step as failed" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      expect(spinner).to receive(:error)
-      expect {
-        progress.fail_step(:github_setup, StandardError.new("Test Error"))
-      }.to output(/Error during creating github repository:/).to_stdout
-       .and raise_error(SystemExit)
-      expect(progress.step_statuses[:github_setup]).to eq(:failed)
+      progress.start_step(:github_setup)
+      expect(registered_spinners[:github_setup]).to receive(:error)
+      progress.fail_step(:github_setup, error)
     end
 
     it "updates step status" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      progress.fail_step(:github_setup, StandardError.new("Test Error"))
-      expect(progress.step_statuses[:github_setup]).to eq(:failed)
+      progress.start_step(:github_setup)
+      expect {
+        progress.fail_step(:github_setup, error)
+      }.to change { progress.step_statuses[:github_setup] }.to(:failed)
     end
 
     it "displays error message" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
       expect {
- progress.fail_step(:github_setup,
-StandardError.new("Test Error")) }.to output(/Error during creating github repository:/).to_stdout
+        progress.fail_step(:github_setup, error)
+      }.to output(/Error during #{described_class::STEPS[:github_setup]}/).to_stdout
     end
 
     it "shows troubleshooting steps" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
       expect {
- progress.fail_step(:github_setup, StandardError.new("Test Error")) }.to output(/Troubleshooting steps:/).to_stdout
+        progress.fail_step(:github_setup, error)
+      }.to output(/Troubleshooting steps:/).to_stdout
     end
 
     context "with different steps" do
-      it "shows relevant troubleshooting for clone_template" do
-        allow(spinner_multi).to receive(:[]).with(:clone_template).and_return(spinner)
-        expect {
- progress.fail_step(:clone_template, StandardError.new("Clone Error")) }.to output(/Troubleshooting steps:/).to_stdout
-      end
-
-      it "shows relevant troubleshooting for hatchbox_setup" do
-        allow(spinner_multi).to receive(:[]).with(:hatchbox_setup).and_return(spinner)
-        expect {
- progress.fail_step(:hatchbox_setup,
-StandardError.new("Hatchbox Error")) }.to output(/Troubleshooting steps:/).to_stdout
-      end
-
-      it "shows relevant troubleshooting for deploy" do
-        allow(spinner_multi).to receive(:[]).with(:deploy).and_return(spinner)
-        expect {
- progress.fail_step(:deploy, StandardError.new("Deploy Error")) }.to output(/Troubleshooting steps:/).to_stdout
+      %i[clone_template hatchbox_setup deploy].each do |step|
+        it "shows relevant troubleshooting for #{step}" do
+          message = described_class::STEPS[step]
+          expect {
+            progress.fail_step(step, error)
+          }.to output(/Error during #{message}/).to_stdout
+        end
       end
     end
   end
 
   describe "#summary" do
-    it "displays deployment summary" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      allow(spinner).to receive(:success)
+    let(:progress) { described_class.new }
+
+    before do
+      # Set up test states
       progress.start_step(:github_setup)
       progress.complete_step(:github_setup)
-      expect { progress.summary }.to output(/Deployment Status:/).to_stdout
+      progress.start_step(:clone_template)
+      progress.fail_step(:clone_template, StandardError.new("Failed"))
+    end
+
+    it "displays deployment summary" do
+      expect {
+        progress.summary
+      }.to output(/\nDeployment Status:/).to_stdout
     end
 
     it "shows success status for completed steps" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      allow(spinner).to receive(:success)
-      progress.start_step(:github_setup)
-      progress.complete_step(:github_setup)
-      expect { progress.summary }.to output(/✓ Creating GitHub repository/).to_stdout
+      message = described_class::STEPS[:github_setup]
+      expect {
+        progress.summary
+      }.to output(/✓ #{message}/).to_stdout
     end
 
     it "shows failure status for failed steps" do
-      allow(spinner_multi).to receive(:[]).with(:github_setup).and_return(spinner)
-      allow(spinner).to receive(:error)
-      progress.start_step(:github_setup)
-      progress.fail_step(:github_setup, StandardError.new("Test Error"))
-      expect { progress.summary }.to output(/✗ Creating GitHub repository/).to_stdout
+      message = described_class::STEPS[:clone_template]
+      expect {
+        progress.summary
+      }.to output(/✗ #{message}/).to_stdout
     end
   end
 end

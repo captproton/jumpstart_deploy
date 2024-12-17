@@ -5,7 +5,7 @@ require "octokit"
 module JumpstartDeploy
   module GitHub
     class Client
-      def initialize(connection: nil, progress: nil)
+      def initialize(connection = nil, progress: nil)
         if connection
           @connection = connection
         else
