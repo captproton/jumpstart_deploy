@@ -8,7 +8,7 @@ gemspec
 gem "puma"
 gem "sqlite3"
 gem "propshaft"
-gem "psych", "~> 5.2.1"
+gem "psych", "~> 5.2.2"
 
 # Frontend
 gem "jsbundling-rails", "~> 1.3"
