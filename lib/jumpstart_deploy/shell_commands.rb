@@ -66,7 +66,7 @@ module JumpstartDeploy
         validate_command!(command, subcommand, args)
 
         cmd = TTY::Command.new(printer: :null)
-        
+
         Dir.chdir(dir || Dir.pwd) do
           result = cmd.run!(command, subcommand, *args)
           result.out.to_s
@@ -101,16 +101,18 @@ module JumpstartDeploy
         end
 
         cmd_config = config[subcommand]
-        
+
         # Check argument count
         case cmd_config[:args]
         when Integer
           unless args.length == cmd_config[:args]
-            raise InvalidCommandError, "Invalid number of arguments for #{subcommand} (expected #{cmd_config[:args]}, got #{args.length})"
+            raise InvalidCommandError,
+"Invalid number of arguments for #{subcommand} (expected #{cmd_config[:args]}, got #{args.length})"
           end
         when Range
           unless cmd_config[:args].include?(args.length)
-            raise InvalidCommandError, "Invalid number of arguments for #{subcommand} (expected #{cmd_config[:args]}, got #{args.length})"
+            raise InvalidCommandError,
+"Invalid number of arguments for #{subcommand} (expected #{cmd_config[:args]}, got #{args.length})"
           end
         end
 
@@ -143,13 +145,13 @@ module JumpstartDeploy
 
       def valid_path?(path)
         return false if path.nil? || path.empty?
-        
+
         # Convert to pathname for validation
         path = Pathname.new(path)
-        
+
         # Check for path traversal attempts
         return false if path.absolute? || path.each_filename.to_a.include?("..")
-        
+
         # Check characters
         path.to_s.match?(/\A[\w\-\.\/]+\z/)
       end
@@ -179,7 +181,7 @@ module JumpstartDeploy
         if args[0] == "-u"
           args.length == 3 && valid_remote?(args[1]) && valid_branch?(args[2])
         else
-          args.length == 2 && valid_remote?(args[0]) && valid_branch?(args[1])  
+          args.length == 2 && valid_remote?(args[0]) && valid_branch?(args[1])
         end
       end
 

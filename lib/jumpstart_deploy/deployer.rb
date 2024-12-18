@@ -6,14 +6,14 @@ module JumpstartDeploy
 
     def initialize
       @github_client = GitHub::Client.new
-      @hatchbox_client = Hatchbox::Client.new 
+      @hatchbox_client = Hatchbox::Client.new
       @progress = DeploymentProgress.new
       @repository = nil
     end
 
     def deploy(options)
       validate_options!(options)
-      
+
       setup_github(options)
       setup_application(options)
       trigger_deployment(options)
@@ -86,7 +86,7 @@ module JumpstartDeploy
 
       if response && response["id"]
         @hatchbox_client.configure_environment(
-          response["id"], 
+          response["id"],
           env_vars: default_env_vars
         )
       end
@@ -111,7 +111,7 @@ module JumpstartDeploy
     def default_env_vars
       {
         "RAILS_ENV" => "production",
-        "RAILS_LOG_TO_STDOUT" => "true", 
+        "RAILS_LOG_TO_STDOUT" => "true",
         "RAILS_SERVE_STATIC_FILES" => "true"
       }
     end

@@ -14,11 +14,11 @@ VCR.configure do |config|
   config.cassette_library_dir = "spec/vcr_cassettes"
   config.hook_into :webmock
   config.configure_rspec_metadata!
-  
+
   # Filter sensitive data
   config.filter_sensitive_data("<GITHUB_TOKEN>") { ENV["GITHUB_TOKEN"] }
   config.filter_sensitive_data("<HATCHBOX_TOKEN>") { ENV["HATCHBOX_API_TOKEN"] }
-  
+
   # Don't allow any real network connections
   config.allow_http_connections_when_no_cassette = false
 end

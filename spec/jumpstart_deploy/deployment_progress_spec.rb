@@ -31,7 +31,7 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
 
     it "handles step interruption" do
       expect(registered_spinners[:github_setup]).to receive(:error).with("Interrupted")
-      
+
       expect {
         progress.interrupt_step(:github_setup, "User cancelled deployment")
       }.to output(/Deployment interrupted: User cancelled deployment/).to_stdout

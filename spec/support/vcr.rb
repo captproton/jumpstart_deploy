@@ -13,7 +13,7 @@ VCR.configure do |config|
   # Filter sensitive data
   config.filter_sensitive_data("<GITHUB_TOKEN>") { ENV["GITHUB_TOKEN"] }
   config.filter_sensitive_data("<HATCHBOX_TOKEN>") { ENV["HATCHBOX_API_TOKEN"] }
-  
+
   # Allow all requests when no cassette
   config.allow_http_connections_when_no_cassette = true
 end

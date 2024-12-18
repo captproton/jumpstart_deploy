@@ -30,7 +30,7 @@ module JumpstartDeploy
 
     def complete_step(step)
       validate_step!(step)
-      @step_statuses[step] = :complete 
+      @step_statuses[step] = :complete
       spinner_for(step).success
     end
 
@@ -52,10 +52,10 @@ module JumpstartDeploy
       puts "\nDeployment Status:"
       @step_statuses.each do |step, status|
         status_icon = case status
-                     when :complete then "✓"
-                     when :interrupted then "⚠"
-                     else "✗"
-                     end
+        when :complete then "✓"
+        when :interrupted then "⚠"
+        else "✗"
+        end
         puts "#{status_icon} #{STEPS[step]}"
       end
     end
@@ -83,11 +83,11 @@ module JumpstartDeploy
       puts "\nError during #{STEPS[step]}:"
       puts error.message
       puts "\nTroubleshooting steps:"
-      
+
       case step
       when :github_setup
         puts "- Verify your GitHub access token is valid"
-        puts "- Check if repository name is available" 
+        puts "- Check if repository name is available"
         puts "- Ensure you have sufficient GitHub permissions"
       when :clone_template
         puts "- Verify Jumpstart Pro credentials"

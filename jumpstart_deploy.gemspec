@@ -39,7 +39,7 @@ Show you the URLs when done"
   spec.add_dependency "turbo-rails"
   spec.add_dependency "tailwindcss-rails"
 
-  # Development dependencies  
+  # Development dependencies
   spec.add_development_dependency "rspec", "~> 3.13"
   spec.add_development_dependency "rspec-rails"
   spec.add_development_dependency "webmock", "~> 3.24"

@@ -40,16 +40,16 @@ RSpec.describe JumpstartDeploy::Deployer do
     it "tracks progress of deployment steps" do
       expect(progress).to receive(:start_step).with(:github_setup)
       expect(progress).to receive(:complete_step).with(:github_setup)
-      
+
       expect(progress).to receive(:start_step).with(:clone_template)
       expect(progress).to receive(:complete_step).with(:clone_template)
-      
+
       expect(progress).to receive(:start_step).with(:configure_app)
       expect(progress).to receive(:complete_step).with(:configure_app)
-      
+
       expect(progress).to receive(:start_step).with(:hatchbox_setup)
       expect(progress).to receive(:complete_step).with(:hatchbox_setup)
-      
+
       expect(progress).to receive(:start_step).with(:deploy)
       expect(progress).to receive(:complete_step).with(:deploy)
 
@@ -74,7 +74,7 @@ RSpec.describe JumpstartDeploy::Deployer do
         allow(progress).to receive(:fail_step) # Allow fail_step to prevent exit
         allow(progress).to receive(:summary)
         expect(progress).not_to receive(:start_step).with(:clone_template)
-        
+
         expect { deployer.deploy(options) }.to raise_error(StandardError)
       end
     end
@@ -89,7 +89,8 @@ RSpec.describe JumpstartDeploy::Deployer do
         expect(progress).to receive(:start_step).with(:github_setup)
         expect(progress).to receive(:complete_step).with(:github_setup)
         expect(progress).to receive(:start_step).with(:clone_template)
-        expect(progress).to receive(:fail_step).with(:clone_template, instance_of(JumpstartDeploy::ShellCommands::CommandError))
+        expect(progress).to receive(:fail_step).with(:clone_template,
+instance_of(JumpstartDeploy::ShellCommands::CommandError))
         expect(progress).to receive(:summary)
 
         expect { deployer.deploy(options) }.to raise_error(JumpstartDeploy::ShellCommands::CommandError)

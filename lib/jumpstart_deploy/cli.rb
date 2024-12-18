@@ -6,7 +6,7 @@ require "tty-prompt"
 module JumpstartDeploy
   class CLI < Thor
     Error = Class.new(StandardError)
-    
+
     def initialize(*args)
       super
       @prompt = TTY::Prompt.new
@@ -27,11 +27,11 @@ module JumpstartDeploy
       # First validate/get app name
       name = options["name"] || prompt_name
       validate_app_name!(name)
-      
+
       # Then handle team name if valid
       team = options["team"] || prompt_team
       validate_team_name!(team) if team
-      
+
       { "name" => name, "team" => team }
     end
 
