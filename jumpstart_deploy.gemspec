@@ -6,7 +6,8 @@ Gem::Specification.new do |spec|
   spec.authors     = [ "captproton" ]
   spec.email       = [ "carl@wdwhub.net" ]
   spec.homepage    = "https://github.com/captproton/jumpstart_deploy"
-  spec.summary     = "A streamlined, repeatable process for deploying fresh Jumpstart Pro Rails apps to Hatchbox throughout your day."
+  spec.summary     = "A streamlined, repeatable process for deploying fresh Jumpstart Pro Rails apps " +
+                     "to Hatchbox throughout your day."
   spec.description = "This tool will: Prompt for app name and any additional options
 Create a GitHub repo
 Set up Jumpstart Pro
