@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "octokit"
+require_relative "errors"
 
 module JumpstartDeploy
   module GitHub
@@ -30,7 +31,5 @@ module JumpstartDeploy
         raise Error, "GitHub access token required" if @access_token.nil?
       end
     end
-
-    class Error < StandardError; end
   end
 end
