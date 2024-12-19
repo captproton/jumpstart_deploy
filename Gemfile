@@ -28,10 +28,20 @@ group :development, :test do
   # API clients
   gem "octokit", "~> 9.2"
   gem "http", "~> 5.2"
+  gem "faraday", "~> 2.7"
+  gem "faraday-retry"
   gem "rspec-rails", "~> 7.1"
   gem "factory_bot_rails", "~> 6.4"
   gem "webmock", "~> 3.24"
   gem "vcr", "~> 6.3"
+  gem "pry-byebug", "~> 3.10"
+  # Additional development tools
+  gem "ffaker"
+  gem "guard-rspec"
+  gem "pry-doc"
+  gem "pry-rails"
+  gem "awesome_print"
+  gem "binding_of_caller"
 end
 
 # Start debugger with binding.b [https://github.com/ruby/debug]
