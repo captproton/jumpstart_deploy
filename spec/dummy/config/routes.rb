@@ -1,4 +1,5 @@
 Rails.application.routes.draw do
-  get "dummy_rails7_testing/index"
   mount JumpstartDeploy::Engine => "/jumpstart_deploy"
+
+  get "dummy_rails7_testing/index"
 end
