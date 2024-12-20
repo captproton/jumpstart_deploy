@@ -2,39 +2,65 @@
 
 The JumpstartDeploy gem provides a streamlined solution for creating and deploying new Jumpstart Pro applications. By automating the setup of a GitHub repository, Hatchbox hosting, and initial application configuration, JumpstartDeploy allows Ruby on Rails developers to focus on building great products rather than managing deployment complexities.
 
-## Getting Started
+## Installation
 
-To use JumpstartDeploy, you'll first need to add the gem to your Gemfile and install the dependencies:
+Install the gem using:
+
+```bash
+$ gem install jumpstart_deploy
+```
+
+Or add it to your Gemfile:
 
 ```ruby
 gem 'jumpstart_deploy', github: 'captproton/jumpstart_deploy'
 ```
 
-```
+And run:
+
+```bash
 $ bundle install
 ```
 
-Next, you'll need to set a few environment variables required by the gem:
+## Configuration
 
-- `GITHUB_TOKEN`: Your GitHub personal access token
-- `HATCHBOX_API_TOKEN`: Your Hatchbox API token
-- `JUMPSTART_REPO_URL`: The URL of the Jumpstart Pro repository, which you can find in the [JumpstartDeploy repository](https://github.com/captproton/jumpstart_deploy)
+Set up the required environment variables:
 
-With the environment variables configured, you can use the `jumpstart_deploy new` command to create and deploy a new Jumpstart Pro application:
+```bash
+# GitHub access token with repo and admin:org scopes
+export GITHUB_TOKEN="your_github_token"
 
+# Hatchbox API token with full access
+export HATCHBOX_API_TOKEN="your_hatchbox_token"
+
+# URL to your Jumpstart Pro repository
+export JUMPSTART_REPO_URL="git@github.com:org/jumpstart-pro.git"
 ```
+
+## Usage
+
+The gem provides a command-line interface for managing deployments:
+
+```bash
+# Show available commands
+$ jumpstart_deploy help
+
+# Create and deploy a new application
 $ jumpstart_deploy new
-What's the name of your app? my-new-app
-GitHub team name (optional):
+
+# Get help for a specific command
+$ jumpstart_deploy help new
 ```
 
-The gem will handle the rest of the deployment process, including:
+When creating a new application, you'll be prompted for:
+- Application name (required)
+- GitHub team name (optional)
 
-1. Creating a new private GitHub repository for your application
-2. Cloning the Jumpstart Pro repository and configuring it for your new app
-3. Setting up a new Hatchbox application and configuring the environment variables
-
-Once the deployment is complete, JumpstartDeploy will provide you with the URLs for your new GitHub repository and Hatchbox application, allowing you to finalize the setup and trigger your first deployment.
+The gem will then:
+1. Create a new private GitHub repository
+2. Clone the Jumpstart Pro repository 
+3. Configure application settings
+4. Set up Hatchbox deployment
 
 ## Secure and Reliable Shell Commands
 
@@ -47,6 +73,16 @@ The shell commands module supports the following operations:
 - **Bundle Commands**: install, exec
 
 By using these pre-built, battle-tested commands, you can be confident that your deployments will be executed consistently and without risk.
+
+## Error Handling
+
+The gem provides clear error messages for common issues:
+- Missing environment variables
+- Invalid application names
+- GitHub permission errors
+- Hatchbox configuration issues
+
+All commands can be safely interrupted with Ctrl+C if needed.
 
 ## Contributing and Support
 
