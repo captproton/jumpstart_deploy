@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "bundler/setup"
+require "jumpstart_deploy"
+
+# Exit cleanly on Ctrl+C and Ctrl+D
+%w[INT TERM].each do |signal|
+  Signal.trap(signal) do
+    puts "\nExiting..."
+    exit 1
+  end
+end
+
+begin
+  JumpstartDeploy::CLI.start(ARGV)
+rescue JumpstartDeploy::Error => e
+  puts "\nERROR: #{e.message}"
+  puts "\nFor help, run: jumpstart_deploy help"
+  exit 1
+rescue Interrupt
+  puts "\nOperation cancelled"
+  exit 1
+rescue StandardError => e
+  puts "\nUnexpected error: #{e.message}"
+  puts e.backtrace if ENV["JUMPSTART_DEBUG"]
+  puts "\nFor help, run: jumpstart_deploy help"
+  exit 1
+end
