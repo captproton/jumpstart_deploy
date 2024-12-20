@@ -21,7 +21,7 @@ Show you the URLs when done"
 
   # Add executable
   spec.bindir = "bin"
-  spec.executables = ["jumpstart_deploy"]
+  spec.executables = [ "jumpstart_deploy" ]
 
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
