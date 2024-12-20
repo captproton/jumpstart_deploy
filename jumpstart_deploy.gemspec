@@ -19,10 +19,6 @@ Show you the URLs when done"
   spec.metadata["source_code_uri"] = "https://github.com/captproton/jumpstart_deploy"
   spec.metadata["changelog_uri"] = "https://github.com/captproton/jumpstart_deploy/blob/main/CHANGELOG.md"
 
-  # Add executable
-  spec.bindir = "bin"
-  spec.executables = [ "jumpstart_deploy" ]
-
   spec.files = Dir.chdir(File.expand_path(__dir__)) do
     Dir["{app,config,db,lib}/**/*", "MIT-LICENSE", "Rakefile", "README.md"]
   end

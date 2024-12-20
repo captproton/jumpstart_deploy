@@ -7,10 +7,6 @@ module JumpstartDeploy
   class CLI < Thor
     Error = Class.new(StandardError)
 
-    def self.exit_on_failure?
-      true
-    end
-
     def initialize(*args)
       super
       @prompt = TTY::Prompt.new
@@ -23,13 +19,6 @@ module JumpstartDeploy
       deployer = Deployer.new
       options = parse_and_validate_options(options)
       deployer.deploy(options)
-    end
-
-    desc "test_signal", "Test signal handling"
-    def test_signal
-      puts "Press Ctrl+C to test signal handling..."
-      sleep 10
-      puts "If you see this, signal handling didn't work!"
     end
 
     private
