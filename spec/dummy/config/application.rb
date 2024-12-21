@@ -17,6 +17,6 @@ module Dummy
     config.eager_load = false
     config.active_support.deprecation = :log
     config.active_support.test_order = :random
-    config.secret_key_base = 'abcdef0123456789'
+    config.secret_key_base = "abcdef0123456789"
   end
 end
