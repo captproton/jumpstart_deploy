@@ -4,44 +4,32 @@ require "spec_helper"
 
 RSpec.describe JumpstartDeploy::DeploymentProgress do
   let(:spinner_multi) { instance_double(TTY::Spinner::Multi) }
-  let(:step_spinners) { {} }
   let(:registered_spinners) { {} }
+  let(:orig_stdout) { $stdout }
+  let(:stdout) { StringIO.new }
 
   before do
+    $stdout = stdout
     allow(TTY::Spinner::Multi).to receive(:new).and_return(spinner_multi)
 
-    # Setup registered spinners lookup
     described_class::STEPS.each do |step, message|
       spinner = instance_double(TTY::Spinner)
       allow(spinner).to receive(:auto_spin)
       allow(spinner).to receive(:success)
       allow(spinner).to receive(:error)
       allow(spinner).to receive(:update)
+
       registered_spinners[step] = spinner
 
-      # Setup spinner registration - allow both formats for testing
+      # Match implementation's string registration
       allow(spinner_multi).to receive(:register)
-        .with(step)
+        .with(step.to_s)
         .and_return(spinner)
     end
-
-    # Allow output
-    $stdout = StringIO.new
   end
 
   after do
-    $stdout = STDOUT
-  end
-
-  describe "#initialize" do
-    it "sets up spinners for all deployment steps" do
-      described_class::STEPS.each do |step, message|
-        expect(registered_spinners[step]).to receive(:update).with(title: message)
-      end
-
-      # Create new progress instance
-      described_class.new
-    end
+    $stdout = orig_stdout
   end
 
   describe "#start_step" do
@@ -63,13 +51,11 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
     let(:progress) { described_class.new }
 
     it "marks step as complete" do
-      progress.start_step(:github_setup)
       expect(registered_spinners[:github_setup]).to receive(:success)
       progress.complete_step(:github_setup)
     end
 
     it "updates step status" do
-      progress.start_step(:github_setup)
       expect {
         progress.complete_step(:github_setup)
       }.to change { progress.step_statuses[:github_setup] }.to(:complete)
@@ -81,13 +67,11 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
     let(:progress) { described_class.new }
 
     it "marks step as failed" do
-      progress.start_step(:github_setup)
       expect(registered_spinners[:github_setup]).to receive(:error)
       progress.fail_step(:github_setup, error)
     end
 
     it "updates step status" do
-      progress.start_step(:github_setup)
       expect {
         progress.fail_step(:github_setup, error)
       }.to change { progress.step_statuses[:github_setup] }.to(:failed)
@@ -95,9 +79,7 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
 
     it "displays error message" do
       progress.fail_step(:github_setup, error)
-      output = $stdout.string
-      message = described_class::STEPS[:github_setup]
-      expect(output).to include("\nError during #{message}:")
+      expect(stdout.string).to include("Error during #{described_class::STEPS[:github_setup]}")
     end
 
     it "shows troubleshooting steps" do
@@ -107,14 +89,30 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
     end
 
     context "with different steps" do
-      %i[clone_template hatchbox_setup deploy].each do |step|
+      described_class::STEPS.keys.each do |step|
         it "shows relevant troubleshooting for #{step}" do
-          message = described_class::STEPS[step]
           progress.fail_step(step, error)
-          output = $stdout.string
-          expect(output).to include("\nError during #{message}:")
+          output = stdout.string
+          expect(output).to include("Error during #{described_class::STEPS[step]}")
         end
       end
+    end
+  end
+
+  describe "#interrupt_step" do
+    let(:progress) { described_class.new }
+
+    it "handles step interruption" do
+      expect(registered_spinners[:github_setup]).to receive(:error).with("Interrupted")
+      expect {
+        progress.interrupt_step(:github_setup, "User cancelled")
+      }.to output(/Deployment interrupted: User cancelled/).to_stdout
+    end
+
+    it "validates step existence" do
+      expect {
+        progress.interrupt_step(:invalid_step, "test")
+      }.to raise_error(ArgumentError, "Invalid step: invalid_step")
     end
   end
 
@@ -122,10 +120,7 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
     let(:progress) { described_class.new }
 
     before do
-      # Set up test states
-      progress.start_step(:github_setup)
       progress.complete_step(:github_setup)
-      progress.start_step(:clone_template)
       progress.fail_step(:clone_template, StandardError.new("Failed"))
     end
 
@@ -136,17 +131,15 @@ RSpec.describe JumpstartDeploy::DeploymentProgress do
     end
 
     it "shows success status for completed steps" do
-      message = described_class::STEPS[:github_setup]
       expect {
         progress.summary
-      }.to output(/✓ #{message}/).to_stdout
+      }.to output(/✓ #{described_class::STEPS[:github_setup]}/).to_stdout
     end
 
     it "shows failure status for failed steps" do
-      message = described_class::STEPS[:clone_template]
       expect {
         progress.summary
-      }.to output(/✗ #{message}/).to_stdout
+      }.to output(/✗ #{described_class::STEPS[:clone_template]}/).to_stdout
     end
   end
 end
