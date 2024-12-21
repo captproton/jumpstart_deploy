@@ -64,7 +64,7 @@ module JumpstartDeploy
 
     def setup_spinners
       STEPS.each do |step, message|
-        spinner = @spinners.register(step)
+        spinner = @spinners.register(step.to_s)  # Convert symbol to string for TTY::Spinner
         spinner.update(title: message)
         @registered_spinners[step] = spinner
       end
