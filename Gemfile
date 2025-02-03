@@ -14,7 +14,7 @@ gem "psych", "~> 5.2.1"
 gem "jsbundling-rails", "~> 1.3"
 gem "stimulus-rails", "~> 1.3"
 gem "turbo-rails", "~> 2.0"
-gem "tailwindcss-rails", "~> 3.0"
+gem "tailwindcss-rails", "~> 4.0"
 
 group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
