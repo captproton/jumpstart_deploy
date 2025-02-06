@@ -32,7 +32,7 @@ group :development, :test do
   gem "faraday-retry"
   gem "rspec-rails", "~> 7.1"
   gem "factory_bot_rails", "~> 6.4"
-  gem "webmock", "~> 3.24"
+  gem "webmock", "~> 3.25"
   gem "vcr", "~> 6.3"
   gem "pry-byebug", "~> 3.10"
   # Additional development tools
