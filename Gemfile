@@ -18,7 +18,7 @@ gem "tailwindcss-rails", "~> 3.0"
 
 group :development, :test do
   # Omakase Ruby styling [https://github.com/rails/rubocop-rails-omakase/]
-  gem "rubocop-rails-omakase", "~> 1.0", require: false
+  gem "rubocop-rails-omakase", "~> 1.1", require: false
   gem "rubocop-rake", "~> 0.6", require: false
   gem "rspec", "~> 3.13"
   # CLI tools for testing
